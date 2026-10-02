@@ -1,0 +1,6 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readCalendar,writeCalendar} from '../src/ical.js';
+const calendar=lines=>'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:test\r\nSUMMARY:Test\r\n'+lines+'\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n';
+test('all-day exclusive end and TZID without VTIMEZONE preserve actual calendar times',()=>{const d=calendar('DTSTART;VALUE=DATE:20261002\r\nDTEND;VALUE=DATE:20261003');assert.equal(readCalendar(d)[0].event.allDay,true);assert.equal(readCalendar(d)[0].event.end,'2026-10-03T00:00:00.000Z');const timed=calendar('DTSTART;TZID=Asia/Shanghai:20261002T090000\r\nDTEND;TZID=Asia/Shanghai:20261002T100000');assert.equal(readCalendar(timed,{timezone:'UTC'})[0].event.start,'2026-10-02T01:00:00.000Z');});
+test('restoring a recurring exception removes its EXDATE',()=>{const now=Date.parse('2026-10-01T00:00:00Z'),raw=calendar('DTSTART:20261002T090000Z\r\nDTEND:20261002T100000Z\r\nRRULE:FREQ=WEEKLY;COUNT=3\r\nEXDATE:20261009T090000Z');const event={title:'Restored',start:'2026-10-09T09:00:00Z',end:'2026-10-09T10:00:00Z'};const written=writeCalendar(event,{original:raw,uid:'test',key:'2026-10-09T09:00:00Z',now});assert.equal(readCalendar(written,{now}).length,3);});
