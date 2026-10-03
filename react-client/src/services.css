@@ -1,0 +1,45 @@
+.service-panel {
+  padding: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+  overflow: auto;
+}
+.service-panel h2 {
+  font-size: 20px;
+  margin: 0 0 20px;
+}
+.service-panel form {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0;
+}
+.service-panel label {
+  display: grid;
+  gap: 8px;
+}
+.service-actions,
+.service-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0;
+}
+.service-row {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--stroke);
+}
+.service-row p {
+  margin: 6px 0;
+}
+.service-panel .service-choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+}
+.service-preview {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}

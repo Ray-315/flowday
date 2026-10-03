@@ -1,0 +1,221 @@
+.workflow-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 500px;
+}
+.workflow-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--stroke);
+}
+.workflow-toolbar select {
+  max-width: 220px;
+}
+.workflow-toolbar input[type='range'] {
+  width: 95px;
+  margin-left: auto;
+}
+.workflow-toolbar select,
+.workflow-inspector select {
+  padding: 7px 10px;
+  background: var(--surface, transparent);
+  color: inherit;
+  border: 1px solid var(--stroke);
+  border-radius: 6px;
+}
+.workflow-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.workflow-viewport {
+  position: relative;
+  flex: 1;
+  overflow: auto;
+  min-width: 0;
+  min-height: 400px;
+}
+.workflow-canvas {
+  position: relative;
+  transform-origin: top left;
+}
+.workflow-selection-box {
+  position: absolute;
+  pointer-events: none;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.workflow-edges {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  color: var(--muted, #9198a5);
+}
+.workflow-edge {
+  cursor: pointer;
+  pointer-events: auto;
+}
+.workflow-edge path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+.workflow-edge .workflow-edge-hit {
+  stroke: transparent;
+  stroke-width: 16;
+}
+.workflow-edge.inactive {
+  opacity: 0.35;
+}
+.workflow-edge.selected {
+  color: var(--accent, #4b70e8);
+}
+.workflow-edge text {
+  fill: currentColor;
+  font-size: 12px;
+  text-anchor: middle;
+}
+.workflow-node {
+  position: absolute;
+  width: 200px;
+  min-height: 86px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px 16px;
+  border: 1px solid var(--stroke);
+  border-radius: 9px;
+  background: var(--panel, var(--surface, #fff));
+  color: inherit;
+  user-select: none;
+  touch-action: none;
+  cursor: grab;
+  box-sizing: border-box;
+}
+.workflow-node.selected {
+  border-color: var(--accent, #4b70e8);
+  outline: 1px solid var(--accent, #4b70e8);
+}
+.workflow-node strong {
+  font-size: 14px;
+  font-weight: 500;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.workflow-node-kind,
+.workflow-node-status {
+  color: var(--muted);
+  font-size: 11px;
+}
+.workflow-node.kind-condition {
+  border-radius: 22px;
+}
+.workflow-node.kind-group {
+  border-style: dashed;
+}
+.workflow-port {
+  position: absolute;
+  top: 36px;
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: 1px solid var(--secondary);
+  border-radius: 50%;
+  background: var(--surface);
+  cursor: crosshair;
+}
+.workflow-port.input {
+  left: -6px;
+}
+.workflow-port.output {
+  right: -6px;
+}
+.workflow-port.connecting {
+  background: var(--accent, #4b70e8);
+  border-color: var(--accent, #4b70e8);
+}
+.workflow-inspector {
+  width: 220px;
+  padding: 20px 16px;
+  border-left: 1px solid var(--stroke);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.workflow-inspector h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.workflow-inspector label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 12px;
+}
+.workflow-minimap {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  width: 160px;
+  height: 90px;
+  border: 1px solid var(--stroke);
+  background: var(--surface);
+  cursor: pointer;
+  border-radius: 5px;
+}
+.workflow-minimap rect {
+  fill: var(--muted);
+}
+.workflow-minimap rect.selected {
+  fill: var(--accent, #4b70e8);
+}
+.workflow-dialog {
+  max-width: 440px;
+}
+.workflow-dialog .form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 24px;
+}
+.workflow-dialog label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+.workflow-dialog input,
+.workflow-dialog select,
+.workflow-dialog textarea {
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--stroke);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font: inherit;
+}
+.workflow-dialog textarea {
+  min-height: 70px;
+  resize: vertical;
+}
+@media (max-width: 700px) {
+  .workflow-body {
+    flex-direction: column;
+  }
+  .workflow-inspector {
+    width: auto;
+    border-left: 0;
+    border-top: 1px solid var(--stroke);
+  }
+  .workflow-minimap {
+    display: none;
+  }
+}

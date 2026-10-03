@@ -1,0 +1,71 @@
+.today-capture-panel {
+  margin-bottom: 16px;
+  padding: 0 16px;
+}
+.today-capture-panel .quick-add {
+  margin: 0;
+  border-top: 0;
+}
+.today-captures {
+  margin: 0 0 12px;
+}
+.today-captures summary {
+  cursor: pointer;
+  color: var(--secondary);
+  font-size: 12px;
+}
+.today-extra-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 0;
+}
+.today-extra-row > span,
+.today-extra-row > label {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.today-extra-row label {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.today-extra-panel {
+  padding: 0 16px 16px;
+}
+.today-extra-panel .section-heading {
+  padding-left: 0;
+  padding-right: 0;
+}
+.today-extra-panel .task-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.today-extra-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.today-customization .icon-button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.today-pressure {
+  margin: 12px 0;
+}
+.today-pressure > div {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+.today-pressure meter {
+  width: 100%;
+  height: 8px;
+}

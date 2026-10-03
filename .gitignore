@@ -12,3 +12,7 @@ macos/Pods/
 **/Flutter/ephemeral/
 **/flutter/ephemeral/
 *.log
+/releases/
+.env
+.env.*
+!.env.example

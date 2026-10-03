@@ -1,8 +1,29 @@
 # FlowDay
 
-Flutter 原生跨平台日程、Todo 与 Workflow 应用，配套独立部署的 Node.js 服务。Today 按第一张示意图实现双栏日程、Todo、小日历和本日概览。当前能力与剩余工作见 [实现状态](docs/implementation-status.md)。
+FlowDay 是日程、任务、项目与工作流应用，配套独立部署的 Node.js 服务。0.2.0 提供 React + TypeScript + Tauri 2 的 Windows 客户端；原 Flutter 跨平台工程保留在仓库中。
 
-## 在当前 Windows 电脑启动
+## 0.2.0
+
+[下载 Windows x64 安装包](https://github.com/Ray-315/flowday/releases/download/v0.2.0/FlowDay-0.2.0-x64-setup.exe) · [发行说明和校验文件](https://github.com/Ray-315/flowday/releases/tag/v0.2.0)
+
+新客户端位于 [react-client](react-client/README.md)，包含今日模块、任务与项目、五种日历视图、工作流、账号与同步、服务、课程导入、报告及原生本地保存。登录使用独立页面，设置按功能分类，公共控件和图标统一。
+
+```powershell
+cd react-client
+npm ci
+npm run dev
+# Windows 原生客户端：需要 Rust、Microsoft C++ Build Tools 和 WebView2
+npm run tauri -- dev
+npm run tauri -- build --bundles nsis
+```
+
+0.2.0 发行包为 Windows x64。React/Tauri 的 iOS、Android 和 macOS 发行包及灵动岛尚未完成；Apple、飞书、邮件和 AI 服务的真实账号验收范围见 [迁移记录](docs/react-production-migration.md)。服务端兼容补丁随源码提供，发布 GitHub 不会自动更新生产服务。
+
+![登录页](docs/screenshots/react-0.2.0/login.png)
+
+![设置页](docs/screenshots/react-0.2.0/settings.png)
+
+## 原 Flutter 客户端运行
 
 直接双击 `build\windows\x64\runner\Release\flowday.exe`，或运行：
 

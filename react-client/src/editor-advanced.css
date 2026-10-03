@@ -1,0 +1,86 @@
+.editor-advanced {
+  border-top: 1px solid var(--stroke);
+  padding-top: 12px;
+}
+.editor-advanced summary {
+  cursor: pointer;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.editor-advanced .field {
+  margin: 10px 0;
+}
+.editor-advanced textarea {
+  width: 100%;
+  min-height: 76px;
+  resize: vertical;
+  border: 1px solid var(--stroke);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+}
+.attachment-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.batch-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 8px 16px;
+}
+.report-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 12px 0 24px;
+}
+.report-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.report-stats strong {
+  font-size: 24px;
+}
+.course-preview {
+  max-height: 360px;
+  overflow: auto;
+  margin: 12px 0;
+}
+.attachment-markdown {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 200px;
+  overflow: auto;
+  font: inherit;
+}
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+.report-table td,
+.report-table th {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--stroke);
+}
+.report-pressure {
+  max-height: 260px;
+  overflow: auto;
+}
+.report-pressure > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+}
+.report-pressure meter {
+  flex: 1;
+}

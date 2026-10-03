@@ -29,7 +29,7 @@ const fields = {
   nodes:{id,projectId:id,title:text,description:string,kind:one(['task','condition','delay','milestone','note','link','group']),status:one(['locked','ready','doing','waiting','done','skipped']),taskId:nullable(id),x:Number.isFinite,y:Number.isFinite,anyPredecessor:bool,groupId:nullable(id),targetProjectId:nullable(id),selectedBranchEdgeId:nullable(id),collapsed:bool,completedAt:nullable(date),delayWaiting:bool},
   edges:{id,projectId:id,sourceId:id,targetId:id,label:string,active:bool,delayMinutes:integer,availableAt:nullable(date)},
   captures:{id,text,createdAt:date,processed:bool},
-  notices:{id,title:text,body:string,createdAt:date,read:bool,acknowledged:bool,taskId:nullable(id),type:one(['reminder','calendar_conflict','workflow','ai','system']),eventId:nullable(id),projectId:nullable(id),nodeId:nullable(id)}
+  notices:{id,title:text,body:string,createdAt:date,read:bool,acknowledged:bool,taskId:nullable(id),type:nullable(one(['reminder','calendar_conflict','workflow','ai','system'])),eventId:nullable(id),projectId:nullable(id),nodeId:nullable(id)}
 };
 export function validateData(data) {
   object(data,{schemaVersion:v=>v===1,...Object.fromEntries(Object.keys(fields).map(k=>[k,Array.isArray])),preferences:v=>v&&typeof v==='object'&&!Array.isArray(v)},Object.keys(emptyData()));
@@ -56,6 +56,10 @@ export function validateData(data) {
   }
   const known={calendarView:one(['月','周','日','时间轴','列表']),overlapStyle:one(['并排','层叠','聚合']),weekStartsMonday:bool,displayName:v=>string(v)&&v.length<=100,themeMode:one(['system','light','dark']),fontScale:v=>Number.isFinite(v)&&v>=0.5&&v<=3,density:one(['compact','comfortable','spacious','紧凑','舒适','宽松']),reminderMinutes:integer,reminderInterval:integer,maxReminders:integer,todayModules:v=>Array.isArray(v)&&v.length<=30&&v.every(string),defaultPriority:one(['low','normal','high','urgent']),defaultDifficulty:v=>string(v)||integer(v),timezone:v=>{try {new Intl.DateTimeFormat('en',{timeZone:v});return typeof v==='string';}catch{return false;}},dateFormat:string,timeFormat:string};
   known.courseReminderLeadMinutes=n=>integer(n)&&n<=10080;
+  known.todayModuleOrder=known.todayModules;
+  known.todayHiddenModules=known.todayModules;
+  const validTimezone=known.timezone;
+  known.timezone=v=>v==='system'||validTimezone(v);
   check(Object.keys(data.preferences).length<=100);
   for(const [k,v] of Object.entries(data.preferences)) { check(!/secret|token|password|private.?key|api.?key|webhook|__proto__|constructor|prototype/i.test(k),'敏感设置必须保存在服务器环境变量'); check(known[k]?known[k](v):v===null||bool(v)||string(v)||(typeof v==='number'&&Number.isFinite(v)),`设置 ${k} 无效`); }
   return data;
