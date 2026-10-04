@@ -26,7 +26,7 @@ import { Editor } from './Editors';
 import { CloudSync } from './CloudSync';
 import type { ServiceSection } from './Services';
 import { SettingsPage, type SettingsSection } from './SettingsPage';
-import { initialWorkspace, initialStorageError, workspaceStorage, trialStorageKey, credentialVault, persistRemote, readSyncBaseline, saveSyncBaseline } from './storage';
+import { initialWorkspace, initialStorageError, workspaceStorage, trialStorageKey, credentialVault, loginPreferences, persistRemote, readSyncBaseline, saveSyncBaseline } from './storage';
 import { FlowApi, SyncController, ApiException, type AuthSession } from './api';
 import { GlobalSearch } from './GlobalSearch';
 import { Account } from './Account';
@@ -87,6 +87,7 @@ export default function App() {
   const [error, setError] = useState(initial.error);
   const [sessionError, setSessionError] = useState('');
   const authIntent = useRef(0);
+  const rememberSession = useRef(loginPreferences.read());
   const [storageBlocked, setStorageBlocked] = useState(Boolean(initial.error));
   const [page, setPage] = useState<Page>('today');
   const [day, setDay] = useState(localDay);
@@ -175,10 +176,10 @@ export default function App() {
     }
     return controller;
   }
-  async function switchSession(next:AuthSession|null, persist=true) {
+  async function switchSession(next:AuthSession|null, persist=true, remember=rememberSession.current) {
     if(persist)authIntent.current++;
     const target=next ? `${api.baseUrl}:${next.user.id}` : 'guest';
-    if(target===scopeRef.current&&(!next||next.token===syncRef.current?.session.token)) {if(persist&&next)await credentialVault.write('session',JSON.stringify(next));setSession(next);setSessionError('');return;}
+    if(target===scopeRef.current&&(!next||next.token===syncRef.current?.session.token)) {if(persist&&next){if(remember)await credentialVault.write('session',JSON.stringify(next));else await credentialVault.delete('session');loginPreferences.write(remember);rememberSession.current=remember;}setSession(next);setSessionError('');return;}
     const generation=++scopeGeneration.current;
     const previousScope=scopeRef.current;
     switchingRef.current=true;
@@ -189,7 +190,12 @@ export default function App() {
       if(generation!==scopeGeneration.current)return;
       const controller=await createSync(next,target,generation);
       if(generation!==scopeGeneration.current){controller?.dispose();return;}
-      if(persist) {if(next)await credentialVault.write('session',JSON.stringify(next));else await credentialVault.delete('session');}
+      if(persist) {
+        if(next&&remember)await credentialVault.write('session',JSON.stringify(next));
+        else if(next||rememberSession.current)await credentialVault.delete('session');
+        loginPreferences.write(next?remember:false);
+        rememberSession.current=next?remember:false;
+      }
       if(generation!==scopeGeneration.current)return;
       scopeRef.current=target;dataRef.current=workspace;
       setData(workspace);setStorageBlocked(false);setProject(null);setQuery('');setEditing(null);setAuthOpen(false);setTool(null);setWorkflowFocus({projectId:null,nodeId:null});setCaptureText('');setSession(next);
@@ -206,7 +212,7 @@ export default function App() {
     let disposed=false;
     const intent=authIntent.current;
     const current=()=>!disposed&&intent===authIntent.current;
-    if(!preview)void credentialVault.read('session').then(async source=>{
+    if(!preview&&rememberSession.current)void credentialVault.read('session').then(async source=>{
       if(!source||!current())return;
       const value=JSON.parse(source) as AuthSession;
       if(typeof value.token!=='string'||!value.user?.id)throw new Error('会话数据无效');
@@ -305,7 +311,7 @@ export default function App() {
   const title =
     selectedProject?.title ?? (page === 'today' ? greeting : pageNames[page]);
   const openSettings = (section: SettingsSection) => {setSettingsSection(section);navigate('settings');};
-  const account = <Account api={api} session={session} onSession={async next=>{await switchSession(next);setAuthOpen(false);openSettings('account');}} sync={sync} workspace={data} onSave={commit} onContinueLocal={()=>setAuthOpen(false)}/>;
+  const account = <Account api={api} session={session} onSession={async (next,remember)=>{await switchSession(next,true,remember);setAuthOpen(false);openSettings('account');}} sync={sync} workspace={data} onSave={commit} onContinueLocal={()=>setAuthOpen(false)}/>;
   const signIn = <button className="settings-action" onClick={()=>setAuthOpen(true)}>登录账号以使用此功能<ChevronRight size={18}/></button>;
   const service = (section: ServiceSection) => session && sync ? <Services key={section} section={section} api={api} session={session} sync={sync} workspace={data} onExport={exportFile} initialText={captureText}/> : signIn;
   const enter = {

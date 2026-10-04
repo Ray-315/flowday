@@ -2,12 +2,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { emptyWorkspace, type Workspace } from './workspace';
-import { credentialVault, workspaceStorage } from './storage';
+import { credentialVault, loginPreferences, workspaceStorage } from './storage';
 import { FlowApi, ApiException, type AuthSession } from './api';
 import App from './App';
 
 const callbacks = vi.hoisted(() => ({
-  authenticate: null as null | ((session: AuthSession | null) => Promise<void>),
+  authenticate: null as null | ((session: AuthSession | null, remember?: boolean) => Promise<void>),
   restore: null as null | ((data: Workspace) => boolean),
   save: null as null | ((data: Workspace) => boolean),
 }));
@@ -23,7 +23,7 @@ vi.mock('./Management', async (importOriginal) => ({
   },
 }));
 vi.mock('./Account', () => ({
-  Account: ({ onSession }: { onSession: (session: AuthSession | null) => Promise<void> }) => {
+  Account: ({ onSession }: { onSession: (session: AuthSession | null, remember?: boolean) => Promise<void> }) => {
     callbacks.authenticate = onSession;
     return null;
   },
@@ -68,6 +68,7 @@ describe('account switching', () => {
         setItem: (key: string, value: string) => entries.set(key, value),
         removeItem: (key: string) => entries.delete(key),
       });
+      vi.spyOn(loginPreferences, 'read').mockReturnValue(true);
       const user = { id: 'account-user', email: 'user@example.test', displayName: '用户' };
       let finishSession!: (source: string) => void;
       vi.spyOn(credentialVault, 'read').mockImplementation(
@@ -129,6 +130,7 @@ it.each(['failed-before', 'failed-after', 'stale-after', 'expired-after'] as con
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener() {}, removeEventListener() {} }));
   vi.stubGlobal('localStorage', { getItem: () => null, setItem() {}, removeItem() {} });
+  vi.spyOn(loginPreferences, 'read').mockReturnValue(true);
   let resolveRead!: (value: string) => void;
   let rejectRead!: (reason: unknown) => void;
   vi.spyOn(credentialVault, 'read').mockImplementation(() => new Promise((resolve, reject) => { resolveRead = resolve; rejectRead = reject; }));
@@ -161,6 +163,37 @@ it.each(['failed-before', 'failed-after', 'stale-after', 'expired-after'] as con
       expect(host.textContent).not.toContain('无法恢复登录会话');
     } else expect(me).not.toHaveBeenCalled();
     expect(remove).not.toHaveBeenCalled();
+  } finally {
+    await act(async () => root.unmount());
+    host.remove();
+  }
+});
+
+it('does not read or save tokens and clears any previous token when auto-login is disabled', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  vi.stubGlobal('matchMedia', () => ({ matches:false, addEventListener() {}, removeEventListener() {} }));
+  vi.spyOn(loginPreferences, 'read').mockReturnValue(false);
+  const cache = new Map<string,string>();
+  vi.stubGlobal('localStorage', { getItem:(key:string)=>cache.get(key)??null, setItem:(key:string,value:string)=>cache.set(key,value), removeItem:(key:string)=>cache.delete(key) });
+  const read = vi.spyOn(credentialVault,'read');
+  const write = vi.spyOn(credentialVault,'write');
+  const remove = vi.spyOn(credentialVault,'delete').mockResolvedValue();
+  vi.spyOn(workspaceStorage,'flush').mockResolvedValue();
+  vi.spyOn(workspaceStorage,'load').mockResolvedValue(emptyWorkspace());
+  const host = document.createElement('div');
+  document.body.append(host);
+  const root = createRoot(host);
+  try {
+    await act(async () => root.render(createElement(App)));
+    await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="账号与安全"]')!.click());
+    await act(async () => callbacks.authenticate!({ token:'memory-only-token',user:{id:'user',email:'test@example.test',displayName:'临时登录用户'} }, false));
+    expect(host.textContent).toContain('临时登录用户');
+    expect(loginPreferences.read()).toBe(false);
+    expect([...cache.values()].join('')).not.toContain('memory-only-token');
+    await act(async () => callbacks.authenticate!(null));
+    expect(read).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
+    expect(remove).toHaveBeenCalledExactlyOnceWith('session');
   } finally {
     await act(async () => root.unmount());
     host.remove();

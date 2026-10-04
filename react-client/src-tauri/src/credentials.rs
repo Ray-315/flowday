@@ -35,66 +35,30 @@ mod platform {
     }
 }
 #[cfg(target_os = "macos")]
-mod platform {
-    use security_framework::passwords::{
-        delete_generic_password, generic_password, set_generic_password, PasswordOptions,
-    };
-
-    const SERVICE: &str = "pro.flowday.react-trial";
-    const ITEM_NOT_FOUND: i32 = -25300;
-
-    fn validate(key: &str) -> Result<(), String> {
-        if key.is_empty() || key.len() > 200 || key.contains('\0') {
-            return Err("凭据标识无效".into());
-        }
-        Ok(())
-    }
-
-    pub fn read(key: &str) -> Result<Option<String>, String> {
-        validate(key)?;
-        match generic_password(PasswordOptions::new_generic_password(SERVICE, key)) {
-            Ok(bytes) => String::from_utf8(bytes).map(Some).map_err(|_| "钥匙串凭据格式无效".into()),
-            Err(error) if error.code() == ITEM_NOT_FOUND => Ok(None),
-            Err(_) => Err("无法读取 macOS 钥匙串，请解锁钥匙串并允许 FlowDay 访问".into()),
-        }
-    }
-
-    pub fn write(key: &str, value: &str) -> Result<(), String> {
-        validate(key)?;
-        if value.len() > 2560 { return Err("凭据内容过大".into()); }
-        set_generic_password(SERVICE, key, value.as_bytes())
-            .map_err(|_| "无法保存登录信息到 macOS 钥匙串，请解锁钥匙串并允许 FlowDay 访问".into())
-    }
-
-    pub fn delete(key: &str) -> Result<(), String> {
-        validate(key)?;
-        match delete_generic_password(SERVICE, key) {
-            Ok(()) => Ok(()),
-            Err(error) if error.code() == ITEM_NOT_FOUND => Ok(()),
-            Err(_) => Err("无法删除 macOS 钥匙串中的登录信息，请解锁钥匙串并允许 FlowDay 访问".into()),
-        }
-    }
-}
+mod local_session;
 #[tauri::command]
-pub fn credential_read(key: String) -> Result<Option<String>, String> {
+pub fn credential_read(app: tauri::AppHandle, key: String) -> Result<Option<String>, String> {
     if std::env::var_os("FLOWDAY_TEST_DATA_DIR").is_some() { return Ok(None); }
-    #[cfg(any(windows, target_os = "macos"))] { platform::read(&key) }
-    #[cfg(not(any(windows, target_os = "macos")))] { let _ = key; Ok(None) }
+    #[cfg(windows)] { let _ = app; platform::read(&key) }
+    #[cfg(target_os = "macos")] { local_session::read(&local_session::directory(&app)?, &key) }
+    #[cfg(not(any(windows, target_os = "macos")))] { let _ = (app,key); Ok(None) }
 }
 #[tauri::command]
-pub fn credential_write(key: String, value: String) -> Result<(), String> {
+pub fn credential_write(app: tauri::AppHandle, key: String, value: String) -> Result<(), String> {
     if std::env::var_os("FLOWDAY_TEST_DATA_DIR").is_some() { return Ok(()); }
-    #[cfg(any(windows, target_os = "macos"))] { platform::write(&key, &value) }
-    #[cfg(not(any(windows, target_os = "macos")))] { let _ = (key,value); Err("当前平台尚未配置安全凭据存储".into()) }
+    #[cfg(windows)] { let _ = app; platform::write(&key, &value) }
+    #[cfg(target_os = "macos")] { local_session::write(&local_session::directory(&app)?, &key, &value) }
+    #[cfg(not(any(windows, target_os = "macos")))] { let _ = (app,key,value); Err("当前平台尚未配置安全凭据存储".into()) }
 }
 #[tauri::command]
-pub fn credential_delete(key: String) -> Result<(), String> {
+pub fn credential_delete(app: tauri::AppHandle, key: String) -> Result<(), String> {
     if std::env::var_os("FLOWDAY_TEST_DATA_DIR").is_some() { return Ok(()); }
-    #[cfg(any(windows, target_os = "macos"))] { platform::delete(&key) }
-    #[cfg(not(any(windows, target_os = "macos")))] { let _ = key; Ok(()) }
+    #[cfg(windows)] { let _ = app; platform::delete(&key) }
+    #[cfg(target_os = "macos")] { local_session::delete(&local_session::directory(&app)?, &key) }
+    #[cfg(not(any(windows, target_os = "macos")))] { let _ = (app,key); Ok(()) }
 }
 
-#[cfg(all(test, any(windows, target_os = "macos")))]
+#[cfg(all(test, windows))]
 mod tests {
     #[test]
     fn system_credential_round_trip_is_isolated_and_removed() {

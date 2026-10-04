@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { ApiException, FlowApi, object, rows, textField, type AuthSession, type SyncController } from './api';
 import './services.css';
 import type { Workspace } from './workspace';
+import { loginPreferences } from './storage';
 import { ToolsDialog } from './Tools';
 import { EnvelopeIcon } from '@phosphor-icons/react/dist/csr/Envelope';
 import { LockSimpleIcon } from '@phosphor-icons/react/dist/csr/LockSimple';
@@ -12,13 +13,14 @@ import { EyeSlashIcon } from '@phosphor-icons/react/dist/csr/EyeSlash';
 export type AccountProps = {
   api: FlowApi;
   session: AuthSession | null;
-  onSession: (session: AuthSession | null) => Promise<void>;
+  onSession: (session: AuthSession | null, remember?: boolean) => Promise<void>;
   sync: SyncController | null;
   workspace?: Workspace;
   onSave?: (next: Workspace) => boolean;
   onContinueLocal?: () => void;
 };
 export function Account({ api, session, onSession, sync, onContinueLocal }: AccountProps) {
+  const [remember, setRemember] = useState(loginPreferences.read);
   const [register, setRegister] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -74,7 +76,7 @@ export function Account({ api, session, onSession, sync, onContinueLocal }: Acco
       setPassword('');
       setCode('');
       try {
-        await onSession(next);
+        await onSession(next, remember);
       } catch (failure) {
         const detail = failure instanceof Error ? failure.message : typeof failure === 'string' ? failure : '无法初始化本机登录状态';
         throw new Error(`${register ? '账号已创建' : '账号验证成功'}，但未能完成本机登录：${detail}`);
@@ -97,6 +99,8 @@ export function Account({ api, session, onSession, sync, onContinueLocal }: Acco
           if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())){setError('请输入有效的邮箱地址');return;}
           setSending(true);void run(async()=>{try{const response=await api.sendRegistrationCode(email.trim());setRetryAt(Date.now()+Number(response.retryAfterSeconds??60)*1000);setCode('');}finally{setSending(false);}});
         }}>{sending?'发送中':retryAt>Date.now()?`${Math.ceil((retryAt-Date.now())/1000)} 秒后重发`:'发送验证码'}</button></div>}
+        <label className="auth-remember"><input type="checkbox" checked={remember} disabled={busy} onChange={event=>setRemember(event.target.checked)}/><span>自动登录</span></label>
+        <p className="auth-session-note">{remember?'在本机保存登录令牌，下次启动自动登录。':'仅本次登录，关闭应用后需要重新登录。'}</p>
         {error&&<p className="form-error" role="alert">{error}</p>}
         <button className="primary-button auth-submit" disabled={busy}>{busy&&!sending?'正在提交':register?'注册':'登录'}</button>
         {onContinueLocal&&<button className="auth-local" type="button" disabled={busy} onClick={onContinueLocal}>继续本地使用</button>}
