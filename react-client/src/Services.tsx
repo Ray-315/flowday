@@ -81,6 +81,8 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
   const date = (value: unknown) => displayDate(value, zone);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [appliedMessage, setAppliedMessage] = useState('');
+  const [applying, setApplying] = useState(false);
   const [items, setItems] = useState<JsonObject[]>([]);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [candidate, setCandidate] = useState(0);
@@ -136,6 +138,7 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
     if (busy) return;
     setBusy(true);
     setError('');
+    setAppliedMessage('');
     try {
       await operation();
     } catch (failure) {
@@ -196,6 +199,7 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   const actions = preview ? rows(object(preview.candidates[candidate]?.intent).actions) : [];
+  const createsEvents = indexes.length > 0 && indexes.every(index => actions[index]?.type === 'event');
   return (
     <section className="service-panel" aria-label={serviceNames[tab]}>
       <p className="section-description">{serviceDescriptions[tab]}</p>
@@ -307,10 +311,12 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
           </details>
           {preview && (
             <>
+              <p className="section-description">以下是预览，尚未保存。勾选要执行的内容，再点击下方按钮。</p>
               <div className="service-actions">
                 {preview.candidates.map((item, index) => (
                   <button
                     key={String(item.id)}
+                    disabled={busy}
                     aria-pressed={candidate === index}
                     onClick={() => choose(index)}
                   >
@@ -322,6 +328,8 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
                 <label className="service-choice" key={index}>
                   <input
                     type="checkbox"
+                    aria-label={`选择：${label(action.title) || actionNames[String(action.type)]}`}
+                    disabled={busy}
                     checked={indexes.includes(index)}
                     onChange={(event) =>
                       setIndexes(
@@ -331,7 +339,7 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
                       )
                     }
                   />
-                  {actionNames[String(action.type)] ?? String(action.type)} ·{' '}
+                  {action.type === 'event' ? '日程' : actionNames[String(action.type)] ?? String(action.type)} ·{' '}
                   {label(action.title) ||
                     workspace.tasks.find((task) => task.id === action.id)?.title ||
                     workspace.events.find((event) => event.id === action.id)?.title ||
@@ -341,24 +349,32 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
                   {action.deadline ? ` · ${date(action.deadline)}` : ''}
                 </label>
               ))}
+              {indexes.length === 0 && <p role="status">请先勾选至少一项。</p>}
               <button
+                className="primary-button"
                 disabled={busy || indexes.length === 0 || Date.parse(preview.expiresAt) <= Date.now()}
                 onClick={() =>
                   void run(async () => {
-                    await sync.remoteMutation((version) => {
-                      if (version !== preview.baseVersion) throw new Error('预览已过期，请重新生成');
-                      return call('POST', '/ai/apply', {
-                        previewId: preview.previewId,
-                        baseVersion: preview.baseVersion,
-                        candidateId: preview.candidates[candidate].id,
-                        actionIndexes: indexes,
+                    setApplying(true);
+                    try {
+                      await sync.remoteMutation((version) => {
+                        if (version !== preview.baseVersion) throw new Error('预览已过期，请重新生成');
+                        return call('POST', '/ai/apply', {
+                          previewId: preview.previewId,
+                          baseVersion: preview.baseVersion,
+                          candidateId: preview.candidates[candidate].id,
+                          actionIndexes: indexes,
+                        });
                       });
-                    });
-                    setPreview(null);
+                      setAppliedMessage(createsEvents ? `已创建 ${indexes.length} 个日程，可在日历中查看。` : `已应用 ${indexes.length} 项更改。`);
+                      setPreview(null);
+                    } finally {
+                      setApplying(false);
+                    }
                   })
                 }
               >
-                确认应用
+                {applying ? '正在保存…' : createsEvents ? '创建日程' : '确认应用'}
               </button>
             </>
           )}
@@ -1093,6 +1109,7 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
           </div>
         </>
       )}
+      {appliedMessage && <p role="status">{appliedMessage}</p>}
       {error && <p role="alert">{error}</p>}
     </section>
   );

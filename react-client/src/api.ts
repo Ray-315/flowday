@@ -104,7 +104,7 @@ export class FlowApi {
           timer = setTimeout(() => {
             controller.abort();
             reject(new ApiException(0, 'TIMEOUT', '服务器响应超时，请重试'));
-          }, this.timeoutMs);
+          }, path === '/ai/preview' ? Math.max(this.timeoutMs, 45000) : this.timeoutMs);
         }),
       ]);
     } catch (error) {

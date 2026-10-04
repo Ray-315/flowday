@@ -90,7 +90,7 @@ it('scheduling uses selected timezone for ranges and exclusions rather than syst
     excluded: [{ start: '2026-11-01T06:30:00.000Z', end: '2026-11-01T07:30:00.000Z' }],
   });
 });
-it('AI preview is read-only and commits only selected server-owned actions', async () => {
+it.each(['todo', 'event'])('AI %s preview commits selected actions and reports success', async (type) => {
   let version = 1;
   const send = vi.fn<ApiTransport>(async (request) => {
     const data =
@@ -109,8 +109,8 @@ it('AI preview is read-only and commits only selected server-owned actions', asy
                     label: '方案一',
                     intent: {
                       actions: [
-                        { type: 'todo', title: '任务一' },
-                        { type: 'todo', title: '任务二' },
+                        { type, title: '任务一' },
+                        { type, title: '任务二' },
                       ],
                     },
                   },
@@ -136,7 +136,8 @@ it('AI preview is read-only and commits only selected server-owned actions', asy
   expect(send.mock.calls.some(([request]) => request.path === '/ai/apply')).toBe(false);
   const checkboxes = container.querySelectorAll<HTMLInputElement>('.service-choice input[type=checkbox]');
   await act(async () => checkboxes[checkboxes.length - 1].click());
-  await click('确认应用');
+  await click(type === 'event' ? '创建日程' : '确认应用');
+  expect(container.querySelector('[role=status]')?.textContent).toContain(type === 'event' ? '已创建 1 个日程' : '已应用 1 项更改');
   const apply = send.mock.calls.find(([request]) => request.path === '/ai/apply')?.[0];
   expect(JSON.parse(apply!.body!)).toEqual({
     previewId: 'preview',
