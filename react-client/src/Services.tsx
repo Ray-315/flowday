@@ -325,7 +325,7 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
                 ))}
               </div>
               {actions.map((action, index) => (
-                <label className="service-choice" key={index}>
+                <label className="service-choice ai-preview-choice" key={index}>
                   <input
                     type="checkbox"
                     aria-label={`选择：${label(action.title) || actionNames[String(action.type)]}`}
