@@ -167,9 +167,9 @@ it('reminder signed action requires a separate confirmation before execution', a
     backup: async () => {},
   });
   await act(async () =>
-    root.render(<Services api={api} session={session} sync={sync} workspace={emptyWorkspace()} />),
+    root.render(<Services section="提醒" api={api} session={session} sync={sync} workspace={emptyWorkspace()} />),
   );
-  await click('提醒');
+
   await click('确认');
   expect(send.mock.calls.some(([request]) => request.path === '/reminder-actions')).toBe(false);
   await click('确认执行');

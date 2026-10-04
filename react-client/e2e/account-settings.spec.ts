@@ -5,7 +5,7 @@ test('standalone authentication preserves Flutter field order, password visibili
   await page.route('**/api/v1/auth/registration-code', route => route.fulfill({status:200,json:{retryAfterSeconds:60}}));
   await page.route('**/api/v1/auth/login', route => route.fulfill({status:401,json:{error:{code:'INVALID_CREDENTIALS',message:'邮箱或密码错误'}}}));
   await page.goto('/');
-  await page.getByRole('button',{name:'账号与同步',exact:true}).click();
+  await page.getByRole('button',{name:'账号与安全',exact:true}).click();
   await expect(page.getByRole('heading',{name:'欢迎回来',exact:true})).toBeVisible();
   await expect(page.locator('.sidebar')).toHaveCount(0);
   await page.getByLabel('邮箱地址',{exact:true}).fill('test@example.test');
@@ -79,7 +79,7 @@ test('signed-in account actions keep protected forms and shared service controls
     return route.fulfill({json:{}});
   });
   await page.goto('/');
-  await page.getByRole('button',{name:'账号与同步',exact:true}).click();
+  await page.getByRole('button',{name:'账号与安全',exact:true}).click();
   await page.getByLabel('邮箱地址',{exact:true}).fill(user.email);
   await page.getByLabel('密码',{exact:true}).fill('test-only-password');
   await page.getByRole('button',{name:'登录',exact:true}).click();
@@ -96,9 +96,9 @@ test('signed-in account actions keep protected forms and shared service controls
   await dialog.getByRole('button',{name:'修改密码',exact:true}).click();
   await expect(dialog).toHaveCount(0);
   expect(passwordRequests).toBe(1);
-  await page.getByRole('button',{name:'智能安排与服务',exact:true}).click();
-  await expect(page.getByLabel('自然语言',{exact:true})).toBeVisible();
-  const service=await page.getByLabel('自然语言',{exact:true}).evaluate(element=>{const style=getComputedStyle(element);return {font:style.fontFamily,size:style.fontSize,radius:style.borderRadius,background:style.backgroundColor};});
+  await page.getByRole('button',{name:'AI 助手',exact:true}).click();
+  await expect(page.getByLabel('想安排什么？',{exact:true})).toBeVisible();
+  const service=await page.getByLabel('想安排什么？',{exact:true}).evaluate(element=>{const style=getComputedStyle(element);return {font:style.fontFamily,size:style.fontSize,radius:style.borderRadius,background:style.backgroundColor};});
   await page.getByRole('button',{name:'FlowDay 首页',exact:true}).click();
   await page.getByRole('button',{name:'新建任务',exact:true}).click();
   const editor=await page.getByRole('dialog').getByLabel('任务名称',{exact:true}).evaluate(element=>{const style=getComputedStyle(element);return {font:style.fontFamily,size:style.fontSize,radius:style.borderRadius,background:style.backgroundColor};});

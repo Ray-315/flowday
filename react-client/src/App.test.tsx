@@ -82,10 +82,14 @@ describe('account switching', () => {
       try {
         await act(async () => root.render(createElement(App)));
         const button = [...host.querySelectorAll('button')].find(
-          (item) => item.textContent === (action === 'restore' ? '本地备份' : '设置'),
+          (item) => item.textContent === (action === 'restore' ? '同步与备份' : '设置'),
         )!;
         await act(async () => button.click());
         await act(async () => new Promise(resolve=>setTimeout(resolve,350)));
+        if (action === 'restore') {
+          const local = [...host.querySelectorAll('button')].find(item => item.textContent === '本地备份')!;
+          await act(async () => local.click());
+        }
         const stale = action === 'restore' ? callbacks.restore : callbacks.save;
         expect(stale).not.toBeNull();
         await act(async () => finishSession(JSON.stringify({ token: 'test-session', user })));

@@ -93,3 +93,17 @@ button:disabled { opacity:.45; cursor:default; }
   .service-preview { grid-template-columns:minmax(0,1fr); }
   .account-summary { flex-wrap:wrap; }
 }
+
+/* Group service controls by purpose, with a quiet secondary navigation. */
+.service-tabs button { padding: 9px 14px; color: var(--secondary); background: var(--input); }
+.service-tabs button[aria-current='page'] { background: var(--accent-soft); color: var(--accent); }
+.section-description { color: var(--secondary); font-size: 14px; line-height: 1.7; margin: 0 0 24px; }
+.service-disclosure { border-top: 1px solid var(--stroke); border-bottom: 1px solid var(--stroke); margin: 32px 0; padding: 18px 0; }
+.service-disclosure summary { cursor: pointer; font-size: 15px; font-weight: 500; }
+.service-disclosure summary span { font-size: 13px; font-weight: 400; color: var(--secondary); margin-left: 16px; }
+.service-panel .service-history-title { font-size: 16px; margin: 32px 0 12px; }
+.service-panel[aria-label='AI 助手'] > form > button { justify-self: start; min-width: 128px; }
+.service-panel[aria-label='AI 助手'] textarea { min-height: 144px; }
+@media (max-width: 640px) {
+  .service-disclosure summary span { display: block; margin: 8px 0 0 20px; }
+}

@@ -93,16 +93,16 @@ test('major features have visible navigation and full pages on desktop and narro
   await seed(page);
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 960 });
-    for (const name of ['报告', '通知', '智能安排与服务', '项目管理', '设置', '本地备份']) {
+    for (const name of ['报告', '通知', 'AI 助手', '项目管理', '设置', '同步与备份']) {
       const entry = page.getByRole('button', { name, exact: true });
       await expect(entry).toBeVisible();
       await entry.click();
-      await expect(page.locator('.page-header h1')).toContainText(name==='本地备份'?'设置':name);
+      await expect(page.locator('.page-header h1')).toContainText(name==='同步与备份'?'设置':name);
       await expect(page.getByRole('dialog')).toHaveCount(0);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     }
     await expect(page.getByRole('button', {name:'偏好设置',exact:true})).toHaveCount(0);
-    await page.getByRole('button', {name:'账号与同步',exact:true}).first().click();
+    await page.getByRole('button', {name:'账号与安全',exact:true}).first().click();
     await expect(page.getByRole('heading', {name:'欢迎回来',exact:true})).toBeVisible();
     await expect(page.locator('.sidebar')).toHaveCount(0);
     await page.getByRole('button', {name:'继续本地使用',exact:true}).click();
@@ -130,7 +130,7 @@ test('Today module order and visibility persist, and captures convert exactly on
   await expect(page.locator('.today-module').nth(1).getByRole('heading', { name: '任务' })).toBeVisible();
   await page.getByLabel('快速输入', { exact: true }).fill('浏览器记录转任务');
   await page.getByRole('button', { name: '保存快速输入', exact: true }).click();
-  await expect(page.getByRole('heading', { name: '智能安排与服务.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'AI 助手.' })).toBeVisible();
   await page.getByRole('button', { name: '今天', exact: true }).first().click();
   await page.locator('.today-captures summary').click();
   await page.getByRole('button', { name: '转为任务', exact: true }).click();

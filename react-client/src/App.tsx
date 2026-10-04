@@ -23,6 +23,8 @@ import {
 import { Calendar, MiniCalendar } from './Calendar';
 import { Tasks } from './Tasks';
 import { Editor } from './Editors';
+import { CloudSync } from './CloudSync';
+import type { ServiceSection } from './Services';
 import { SettingsPage, type SettingsSection } from './SettingsPage';
 import { initialWorkspace, initialStorageError, workspaceStorage, trialStorageKey, credentialVault, persistRemote, readSyncBaseline, saveSyncBaseline } from './storage';
 import { FlowApi, SyncController, ApiException, type AuthSession } from './api';
@@ -53,8 +55,8 @@ const Workflow=lazy(()=>import('./Workflow').then(module=>({default:module.Workf
 const Reports=lazy(()=>import('./Reports').then(module=>({default:module.Reports})));
 const CourseImport=lazy(()=>import('./CourseImport').then(module=>({default:module.CourseImport})));
 const preview = import.meta.env.DEV && new URLSearchParams(location.search).get('preview') === '1';
-type Page = 'today' | 'calendar' | 'tasks' | 'workflow' | 'reports' | 'notices' | 'services' | 'projects' | 'settings';
-const pageNames:Record<Page,string>={today:'今天',calendar:'日历',tasks:'任务',workflow:'工作流',reports:'报告',notices:'通知',services:'智能安排与服务',projects:'项目管理',settings:'设置'};
+type Page = 'today' | 'calendar' | 'tasks' | 'workflow' | 'reports' | 'notices' | 'services' | 'attachments' | 'projects' | 'settings';
+const pageNames:Record<Page,string>={today:'今天',calendar:'日历',tasks:'任务',workflow:'工作流',reports:'报告',notices:'通知',services:'AI 助手',attachments:'附件管理',projects:'项目管理',settings:'设置'};
 
 function NavigationIcon({ page }: { page: Page }) {
   const Icon = page === 'today' ? SunIcon : page === 'calendar' ? CalendarBlankIcon : page === 'workflow' ? FlowArrowIcon : page==='reports'?ChartBarIcon:page==='notices'?BellIcon:page==='services'?SparkleIcon:page==='projects'?FoldersIcon:CheckCircleIcon;
@@ -90,6 +92,7 @@ export default function App() {
   const [workflowFocus, setWorkflowFocus] = useState<{ projectId: string|null; nodeId: string|null }>({projectId:null,nodeId:null});
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<Editing | null>(null);
+  const [noticeTab, setNoticeTab] = useState('通知记录');
   const [settingsSection, setSettingsSection] = useState<SettingsSection>('general');
   const [authOpen, setAuthOpen] = useState(false);
   const [tool, setTool] = useState<'courses'|'today'|null>(null);
@@ -287,6 +290,8 @@ export default function App() {
     selectedProject?.title ?? (page === 'today' ? greeting : pageNames[page]);
   const openSettings = (section: SettingsSection) => {setSettingsSection(section);navigate('settings');};
   const account = <Account api={api} session={session} onSession={async next=>{await switchSession(next);setAuthOpen(false);openSettings('account');}} sync={sync} workspace={data} onSave={commit} onContinueLocal={()=>setAuthOpen(false)}/>;
+  const signIn = <button className="settings-action" onClick={()=>setAuthOpen(true)}>登录账号以使用此功能<ChevronRight size={18}/></button>;
+  const service = (section: ServiceSection) => session && sync ? <Services key={section} section={section} api={api} session={session} sync={sync} workspace={data} onExport={exportFile} initialText={captureText}/> : signIn;
   const enter = {
     initial: { opacity: 0, y: reduced ? 0 : 12 },
     animate: { opacity: 1, y: 0 },
@@ -325,17 +330,17 @@ export default function App() {
                 ['workflow', '工作流'],
                 ['reports', '报告'],
                 ['notices', '通知'],
-                ['services', '智能安排与服务'],
+                ['services', 'AI 助手'],
               ] as const
             ).map(([key, label]) => (
               <button
                 key={key}
                 aria-label={label}
-                className={`nav-item ${page === key && !project ? 'active' : ''}`}
-                aria-current={page === key && !project ? 'page' : undefined}
+                className={`nav-item ${(page === key || (key === 'tasks' && page === 'attachments')) && !project ? 'active' : ''}`}
+                aria-current={(page === key || (key === 'tasks' && page === 'attachments')) && !project ? 'page' : undefined}
                 onClick={() => navigate(key)}
               >
-                {page === key && !project && (
+                {(page === key || (key === 'tasks' && page === 'attachments')) && !project && (
                   <motion.span
                     className="nav-selection"
                     layoutId="nav-selection"
@@ -380,10 +385,10 @@ export default function App() {
             ))}
           </div>
           <div className="sidebar-footer">
-            <button className={`sidebar-account ${page==='settings'&&settingsSection==='account'?'active':''}`} aria-label="账号与同步" onClick={()=>session?openSettings('account'):setAuthOpen(true)}><UserCircleIcon size={28} weight="regular"/><span>{session?.user.displayName||'账号与同步'}</span><ChevronRight size={14}/></button>
+            <button className={`sidebar-account ${page==='settings'&&settingsSection==='account'?'active':''}`} aria-label="账号与安全" onClick={()=>session?openSettings('account'):setAuthOpen(true)}><UserCircleIcon size={28} weight="regular"/><span>{session?.user.displayName||'账号与安全'}</span><ChevronRight size={14}/></button>
             <div className="sidebar-utilities">
               <button className="mobile-projects" aria-label="项目管理" aria-current={page==='projects'?'page':undefined} onClick={()=>navigate('projects')}><NavigationIcon page="projects"/><span>项目</span></button>
-              <button aria-label="本地备份" onClick={()=>openSettings('data')}><DatabaseIcon size={18}/><span>本地备份</span></button>
+              <button aria-label="同步与备份" onClick={()=>openSettings('cloud')}><DatabaseIcon size={18}/><span>同步与备份</span></button>
               <button className="settings-button" aria-label="设置" aria-current={page==='settings'?'page':undefined} onClick={() => openSettings('general')}><GearSixIcon size={18}/><span>设置</span></button>
             </div>
           </div>
@@ -406,6 +411,8 @@ export default function App() {
               </h1>
             </div>
             <div className="header-actions">
+              {page==='tasks'&&<button className="context-action" onClick={()=>navigate('attachments')}>附件管理</button>}
+              {page==='attachments'&&<button className="context-action" onClick={()=>navigate('tasks')}>返回任务</button>}
               {page==='today'&&<button className="context-action" onClick={()=>setTool('today')}><SlidersHorizontalIcon size={18}/><span>定制今天</span></button>}
               {page==='calendar'&&<button className="context-action" onClick={()=>setTool('courses')}><GraduationCapIcon size={19}/><span>课程导入</span></button>}
               <label className="search">
@@ -522,10 +529,11 @@ export default function App() {
               )}
               {page==='workflow'&&<Workflow data={data} onSave={commit} onEdit={setEditing} onProject={id=>setWorkflowFocus({projectId:id,nodeId:null})} {...workflowFocus}/>}
               {page==='reports'&&<Reports data={data} day={day} onEdit={setEditing}/>}
-              {page==='notices'&&<section className="workspace-page"><Notices data={data} onSave={commit} onEdit={setEditing} receiptKey={workspaceStorage.key(scopeRef.current)+'.reminder-receipts'}/></section>}
+              {page==='notices'&&<section className="workspace-page"><nav className="service-tabs" aria-label="通知选项">{['通知记录','提醒管理'].map(label=><button key={label} aria-current={noticeTab===label?'page':undefined} onClick={()=>setNoticeTab(label)}>{label}</button>)}</nav>{noticeTab==='提醒管理'?service('提醒'):<Notices data={data} onSave={commit} onEdit={setEditing} receiptKey={workspaceStorage.key(scopeRef.current)+'.reminder-receipts'}/>}</section>}
               {page==='projects'&&<section className="workspace-page"><Projects data={data} onSave={commit} onEdit={setEditing}/></section>}
-              {page==='settings'&&<SettingsPage data={data} onSave={commit} onImport={restore} rawBackup={()=>workspaceStorage.raw(scopeRef.current)} scope={scopeRef.current} section={settingsSection} onSection={setSettingsSection} account={session?account:<button className="settings-action" onClick={()=>setAuthOpen(true)}>登录账号<ChevronRight size={18}/></button>} onToday={()=>setTool('today')} onCourses={()=>setTool('courses')} onDone={()=>navigate('today')}/>}
-              {page==='services'&&<section className="workspace-page">{session&&sync?<Services api={api} session={session} sync={sync} workspace={data} onExport={exportFile} initialText={captureText}/>:<button className="settings-action" onClick={()=>setAuthOpen(true)}>登录账号<ChevronRight size={18}/></button>}</section>}
+              {page==='settings'&&<SettingsPage data={data} onSave={commit} onImport={restore} rawBackup={()=>workspaceStorage.raw(scopeRef.current)} scope={scopeRef.current} section={settingsSection} onSection={setSettingsSection} cloudSync={sync?<CloudSync sync={sync} workspace={data} onSave={commit} onSignIn={()=>{void switchSession(null).then(()=>setAuthOpen(true));}}/>:signIn} cloudBackups={service('备份')} apple={service('Apple 日历')} feishu={service('飞书')} account={session?account:<button className="settings-action" onClick={()=>setAuthOpen(true)}>登录账号<ChevronRight size={18}/></button>} onToday={()=>setTool('today')} onCourses={()=>setTool('courses')} onDone={()=>navigate('today')}/>}
+              {page==='services'&&<section className="workspace-page">{service('AI')}</section>}
+              {page==='attachments'&&<section className="workspace-page">{service('附件')}</section>}
             </motion.div>
           </AnimatePresence>
         </main>

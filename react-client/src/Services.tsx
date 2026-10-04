@@ -2,6 +2,7 @@ import { Select } from './Select';
 import { useEffect, useState } from 'react';
 import {
   FlowApi,
+  ApiException,
   object,
   rows,
   textField,
@@ -14,7 +15,19 @@ import type { Workspace } from './workspace';
 import './services.css';
 import { instantInZone, zoneFor } from './timezone';
 
+export type ServiceSection = 'AI' | '提醒' | '备份' | '附件' | 'Apple 日历' | '飞书';
+const serviceNames: Record<ServiceSection, string> = { AI: 'AI 助手', 提醒: '提醒管理', 备份: '云备份', 附件: '附件管理', 'Apple 日历': 'iCloud 日历', 飞书: '飞书通知' };
+const serviceDescriptions: Record<ServiceSection, string> = {
+  AI: '把想法变成任务与日程。先预览结果，再由你确认应用。',
+  提醒: '集中管理提醒时间、重复频率和完成状态。',
+  备份: '在 FlowDay 服务器保存工作区快照，需要时恢复到此前的版本。',
+  附件: '管理任务与日程相关的文件、链接和笔记。',
+  'Apple 日历': '连接 iCloud 日历，双向同步日程；不包含任务和整个工作区。',
+  飞书: '将提醒发送到你的飞书机器人。',
+};
+
 export type ServicesProps = {
+  section?: ServiceSection;
   api: FlowApi;
   session: AuthSession;
   sync: SyncController;
@@ -63,10 +76,9 @@ function parsePreview(result: JsonObject): Preview {
     expiresAt: textField(result.expiresAt),
   };
 }
-export function Services({ api, session, sync, workspace, onExport, initialText = '' }: ServicesProps) {
+export function Services({ api, session, sync, workspace, onExport, initialText = '', section: tab = 'AI' }: ServicesProps) {
   const zone = zoneFor(workspace);
   const date = (value: unknown) => displayDate(value, zone);
-  const [tab, setTab] = useState('AI');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [items, setItems] = useState<JsonObject[]>([]);
@@ -128,7 +140,7 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
     try {
       await operation();
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : '操作失败');
+      setError(failure instanceof ApiException && failure.code === 'AI_NOT_CONFIGURED' ? 'AI 分析尚未配置，请联系服务管理员启用。' : failure instanceof Error ? failure.message : typeof failure === 'string' ? failure : '操作失败');
     } finally {
       setBusy(false);
     }
@@ -186,14 +198,8 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
   }
   const actions = preview ? rows(object(preview.candidates[candidate]?.intent).actions) : [];
   return (
-    <section className="service-panel" aria-label="云端服务">
-      <nav className="service-tabs" aria-label="服务">
-        {['AI', '提醒', '备份', '附件', 'Apple 日历', '飞书'].map((item) => (
-          <button key={item} aria-selected={tab === item} disabled={busy} onClick={() => setTab(item)}>
-            {item}
-          </button>
-        ))}
-      </nav>
+    <section className="service-panel" aria-label={serviceNames[tab]}>
+      <p className="section-description">{serviceDescriptions[tab]}</p>
       {tab === 'AI' && (
         <>
           <form
@@ -203,11 +209,13 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
             }}
           >
             <label>
-              自然语言
-              <textarea required value={input} onChange={(event) => setInput(event.target.value)} />
+              想安排什么？
+              <textarea placeholder="例如：明天下午三点整理实验结果，预计一小时" required value={input} onChange={(event) => setInput(event.target.value)} />
             </label>
-            <button disabled={busy}>解析预览</button>
+            <button className="primary-button" disabled={busy}>分析并预览</button>
           </form>
+          <details className="service-disclosure">
+            <summary>自动排程<span>选择待办任务，生成时间安排</span></summary>
           <form
             onSubmit={(event) => {
               event.preventDefault();
@@ -297,6 +305,7 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
               </button>
             </div>
           ))}
+          </details>
           {preview && (
             <>
               <div className="service-actions">
@@ -355,7 +364,8 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
               </button>
             </>
           )}
-          <h2>操作记录</h2>
+          <h2 className="service-history-title">操作记录</h2>
+          {!items.length && <p className="section-description">应用方案后，可以在这里查看和撤销操作。</p>}
           {items.map((item) => (
             <div className="service-row" key={String(item.id)}>
               <p>
