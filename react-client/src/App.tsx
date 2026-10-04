@@ -1,3 +1,5 @@
+import { LiveActivity } from './LiveActivity';
+import { endActivityForOtherScope } from './liveActivityBridge';
 import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { SunIcon } from '@phosphor-icons/react/dist/csr/Sun';
@@ -190,6 +192,8 @@ export default function App() {
       const workspace=await workspaceStorage.load(target);
       if(generation!==scopeGeneration.current)return;
       const controller=await createSync(next,target,generation);
+      if(generation!==scopeGeneration.current){controller?.dispose();return;}
+      await endActivityForOtherScope(target);
       if(generation!==scopeGeneration.current){controller?.dispose();return;}
       if(persist) {
         if(next&&remember)await credentialVault.write('session',JSON.stringify(next));
@@ -460,6 +464,7 @@ export default function App() {
             </div>
           )}
           {query && <GlobalSearch data={data} query={query} onEdit={setEditing} onProject={id=>{setProject(id);setPage('tasks');setQuery('');}} onNode={id=>{setWorkflowFocus({projectId:workflowNodes(data).find(node=>node.id===id)?.projectId??null,nodeId:id});setPage('workflow');setQuery('');}}/>}
+          <LiveActivity workspace={data} scope={renderedScope} visible={page==='today'}/>
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={`${page}-${project ?? ''}`}

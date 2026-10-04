@@ -16,6 +16,7 @@ pub fn run() {
     tauri::Builder::default()
         .manage(native::FileLock(std::sync::Mutex::new(())))
         .invoke_handler(tauri::generate_handler![native::workspace_read, native::sync_baseline_read, native::sync_baseline_write, native::workspace_write, native::workspace_backups, native::workspace_backup, native::workspace_backup_read, native::http_request, native::http_download, credentials::credential_read, credentials::credential_write, credentials::credential_delete])
+        .plugin(tauri_plugin_live_activity::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_notification::init())
