@@ -73,7 +73,7 @@ export function Calendar({
       .filter((event) => Date.parse(event.start) < bounds.end && Date.parse(event.end) > bounds.start)
       .sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
   };
-  const [view, setView] = useState(() => (full ? viewFor(data.preferences.calendarView) : 'day'));
+  const [view, setView] = useState(() => (full ? (typeof matchMedia === 'function' && matchMedia('(max-width: 700px)').matches && !data.preferences.calendarView ? 'list' : viewFor(data.preferences.calendarView)) : 'day'));
   const overlap =
     overlapOverride ??
     (full && ['并排', '层叠', '聚合'].includes(String(data.preferences.overlapStyle))
@@ -107,7 +107,7 @@ export function Calendar({
     setError('');
   }
   useEffect(() => {
-    setView(full ? viewFor(data.preferences.calendarView) : 'day');
+    setView(full ? (typeof matchMedia === 'function' && matchMedia('(max-width: 700px)').matches && !data.preferences.calendarView ? 'list' : viewFor(data.preferences.calendarView)) : 'day');
   }, [data.preferences.calendarView, full]);
   function drop(event: React.DragEvent, date: string, hour = 9, minute = 0) {
     event.preventDefault();
@@ -314,6 +314,7 @@ export function Calendar({
       )}
       {full && view !== 'day' ? (
         <div className={`calendar-range calendar-range-${view}`}>
+          {['list','timeline'].includes(view) && !activeEvents(data).some(item=>item.title.toLowerCase().includes(query.toLowerCase())&&Date.parse(item.start)<dayBounds(shiftDay(rangeStart,rangeDays),zone).start&&Date.parse(item.end)>dayBounds(rangeStart,zone).start) && <div className="calendar-empty"><h3>接下来还没有日程</h3><p>留出一点空间，安排重要的事。</p><button className="secondary-button" onClick={()=>onEdit({kind:'event'})}>添加日程</button></div>}
           {Array.from({ length: rangeDays }, (_, index) => {
             const date = shiftDay(rangeStart, index);
             const items = eventsForDay(data, date).filter(

@@ -94,7 +94,8 @@ test('major features have visible navigation and full pages on desktop and narro
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 960 });
     for (const name of ['报告', '通知', 'AI 助手', '项目管理', '设置', '同步与备份']) {
-      const entry = page.getByRole('button', { name, exact: true });
+      if (width === 390 && name !== 'AI 助手') await page.getByRole('button', {name:'更多',exact:true}).click();
+      const entry = page.getByRole('button', { name:width===390&&name==='通知'?'通知与提醒':name, exact: true });
       await expect(entry).toBeVisible();
       await entry.click();
       await expect(page.locator('.page-header h1')).toContainText(name==='同步与备份'?'设置':name);
@@ -102,7 +103,8 @@ test('major features have visible navigation and full pages on desktop and narro
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     }
     await expect(page.getByRole('button', {name:'偏好设置',exact:true})).toHaveCount(0);
-    await page.getByRole('button', {name:'账号与安全',exact:true}).first().click();
+    if(width===390){await page.getByRole('button', {name:'更多',exact:true}).click();await page.getByRole('button',{name:'登录账号',exact:true}).click();}
+    else await page.getByRole('button', {name:'账号与安全',exact:true}).first().click();
     await expect(page.getByRole('heading', {name:'欢迎回来',exact:true})).toBeVisible();
     await expect(page.locator('.sidebar')).toHaveCount(0);
     await page.getByRole('button', {name:'继续本地使用',exact:true}).click();

@@ -23,6 +23,7 @@ import {
 import { Calendar, MiniCalendar } from './Calendar';
 import { Tasks } from './Tasks';
 import { Editor } from './Editors';
+import { MobileNavigation } from './MobileNavigation';
 import { CloudSync } from './CloudSync';
 import type { ServiceSection } from './Services';
 import { SettingsPage, type SettingsSection } from './SettingsPage';
@@ -55,8 +56,8 @@ const Workflow=lazy(()=>import('./Workflow').then(module=>({default:module.Workf
 const Reports=lazy(()=>import('./Reports').then(module=>({default:module.Reports})));
 const CourseImport=lazy(()=>import('./CourseImport').then(module=>({default:module.CourseImport})));
 const preview = import.meta.env.DEV && new URLSearchParams(location.search).get('preview') === '1';
-type Page = 'today' | 'calendar' | 'tasks' | 'workflow' | 'reports' | 'notices' | 'services' | 'attachments' | 'projects' | 'settings';
-const pageNames:Record<Page,string>={today:'今天',calendar:'日历',tasks:'任务',workflow:'工作流',reports:'报告',notices:'通知',services:'AI 助手',attachments:'附件管理',projects:'项目管理',settings:'设置'};
+type Page = 'today' | 'calendar' | 'tasks' | 'workflow' | 'reports' | 'notices' | 'services' | 'attachments' | 'more' | 'projects' | 'settings';
+const pageNames:Record<Page,string>={today:'今天',calendar:'日历',tasks:'任务',workflow:'工作流',reports:'报告',notices:'通知',services:'AI 助手',attachments:'附件管理',more:'更多',projects:'项目管理',settings:'设置'};
 
 function NavigationIcon({ page }: { page: Page }) {
   const Icon = page === 'today' ? SunIcon : page === 'calendar' ? CalendarBlankIcon : page === 'workflow' ? FlowArrowIcon : page==='reports'?ChartBarIcon:page==='notices'?BellIcon:page==='services'?SparkleIcon:page==='projects'?FoldersIcon:CheckCircleIcon;
@@ -552,6 +553,11 @@ export default function App() {
               {page==='workflow'&&<Workflow data={data} onSave={commit} onEdit={setEditing} onProject={id=>setWorkflowFocus({projectId:id,nodeId:null})} {...workflowFocus}/>}
               {page==='reports'&&<Reports data={data} day={day} onEdit={setEditing}/>}
               {page==='notices'&&<section className="workspace-page"><nav className="service-tabs" aria-label="通知选项">{['通知记录','提醒管理'].map(label=><button key={label} aria-current={noticeTab===label?'page':undefined} onClick={()=>setNoticeTab(label)}>{label}</button>)}</nav>{noticeTab==='提醒管理'?service('提醒'):<Notices data={data} onSave={commit} onEdit={setEditing} receiptKey={workspaceStorage.key(scopeRef.current)+'.reminder-receipts'}/>}</section>}
+              {page==='more'&&<div className="mobile-more">
+                <p className="section-description">规划、回顾和管理，都在这里。</p>
+                <div className="mobile-more-links">{([['projects','项目管理'],['workflow','工作流'],['reports','报告'],['notices','通知与提醒']] as const).map(([key,label])=><button key={key} onClick={()=>navigate(key)}><NavigationIcon page={key}/><span>{label}</span><ChevronRight size={18}/></button>)}</div>
+                <div className="mobile-more-links"><button onClick={()=>session?openSettings('account'):setAuthOpen(true)}><UserCircleIcon size={24}/><span>{session?.user.displayName||'登录账号'}</span><ChevronRight size={18}/></button><button onClick={()=>openSettings('cloud')}><DatabaseIcon size={24}/><span>同步与备份</span><ChevronRight size={18}/></button><button onClick={()=>openSettings('integrations')}><CalendarBlankIcon size={24}/><span>iCloud 日历与集成</span><ChevronRight size={18}/></button><button onClick={()=>openSettings('general')}><GearSixIcon size={24}/><span>设置</span><ChevronRight size={18}/></button></div>
+              </div>}
               {page==='projects'&&<section className="workspace-page"><Projects data={data} onSave={commit} onEdit={setEditing}/></section>}
               {page==='settings'&&<SettingsPage data={data} onSave={commit} onImport={restore} rawBackup={()=>workspaceStorage.raw(scopeRef.current)} scope={scopeRef.current} section={settingsSection} onSection={setSettingsSection} cloudSync={sync?<CloudSync sync={sync} workspace={data} onSave={commit} onSignIn={()=>{void switchSession(null).then(()=>setAuthOpen(true));}}/>:signIn} cloudBackups={service('备份')} apple={service('Apple 日历')} feishu={service('飞书')} account={session?account:<button className="settings-action" onClick={()=>setAuthOpen(true)}>登录账号<ChevronRight size={18}/></button>} onToday={()=>setTool('today')} onCourses={()=>setTool('courses')} onDone={()=>navigate('today')}/>}
               {page==='services'&&<section className="workspace-page">{service('AI')}</section>}
@@ -559,6 +565,7 @@ export default function App() {
             </motion.div>
           </AnimatePresence>
         </main>
+        <MobileNavigation page={page} onNavigate={navigate}/>
       </div>
       <AnimatePresence>
         {editing && (

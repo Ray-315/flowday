@@ -34,28 +34,28 @@ mod platform {
         if unsafe { CredDeleteW(name.as_ptr(), CRED_TYPE_GENERIC, 0) } == 0 && unsafe { GetLastError() } != ERROR_NOT_FOUND { Err("无法删除系统凭据".into()) } else { Ok(()) }
     }
 }
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 mod local_session;
 #[tauri::command]
 pub fn credential_read(app: tauri::AppHandle, key: String) -> Result<Option<String>, String> {
     if std::env::var_os("FLOWDAY_TEST_DATA_DIR").is_some() { return Ok(None); }
     #[cfg(windows)] { let _ = app; platform::read(&key) }
-    #[cfg(target_os = "macos")] { local_session::read(&local_session::directory(&app)?, &key) }
-    #[cfg(not(any(windows, target_os = "macos")))] { let _ = (app,key); Ok(None) }
+    #[cfg(any(target_os = "macos", target_os = "ios"))] { local_session::read(&local_session::directory(&app)?, &key) }
+    #[cfg(not(any(windows, target_os = "macos", target_os = "ios")))] { let _ = (app,key); Ok(None) }
 }
 #[tauri::command]
 pub fn credential_write(app: tauri::AppHandle, key: String, value: String) -> Result<(), String> {
     if std::env::var_os("FLOWDAY_TEST_DATA_DIR").is_some() { return Ok(()); }
     #[cfg(windows)] { let _ = app; platform::write(&key, &value) }
-    #[cfg(target_os = "macos")] { local_session::write(&local_session::directory(&app)?, &key, &value) }
-    #[cfg(not(any(windows, target_os = "macos")))] { let _ = (app,key,value); Err("当前平台尚未配置安全凭据存储".into()) }
+    #[cfg(any(target_os = "macos", target_os = "ios"))] { local_session::write(&local_session::directory(&app)?, &key, &value) }
+    #[cfg(not(any(windows, target_os = "macos", target_os = "ios")))] { let _ = (app,key,value); Err("当前平台尚未配置安全凭据存储".into()) }
 }
 #[tauri::command]
 pub fn credential_delete(app: tauri::AppHandle, key: String) -> Result<(), String> {
     if std::env::var_os("FLOWDAY_TEST_DATA_DIR").is_some() { return Ok(()); }
     #[cfg(windows)] { let _ = app; platform::delete(&key) }
-    #[cfg(target_os = "macos")] { local_session::delete(&local_session::directory(&app)?, &key) }
-    #[cfg(not(any(windows, target_os = "macos")))] { let _ = (app,key); Ok(()) }
+    #[cfg(any(target_os = "macos", target_os = "ios"))] { local_session::delete(&local_session::directory(&app)?, &key) }
+    #[cfg(not(any(windows, target_os = "macos", target_os = "ios")))] { let _ = (app,key); Ok(()) }
 }
 
 #[cfg(all(test, windows))]

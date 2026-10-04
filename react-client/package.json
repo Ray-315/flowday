@@ -4,12 +4,15 @@
   "version": "0.2.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 1420 --strictPort",
+    "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
     "test:ui": "playwright test",
     "test:native": "node scripts/native-smoke.mjs",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "ios:init": "node scripts/ios.mjs init",
+    "ios:dev": "node scripts/ios.mjs dev",
+    "ios:build": "node scripts/ios.mjs build"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

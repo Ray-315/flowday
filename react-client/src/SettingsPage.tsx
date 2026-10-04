@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { Select } from './Select';
 import { Settings } from './Editors';
 import { Preferences, LocalBackups } from './Management';
 import type { Workspace } from './workspace';
@@ -20,6 +21,7 @@ export function SettingsPage({data, onSave, onImport, rawBackup, scope, section,
   const [cloudTab, setCloudTab] = useState('云同步');
   const [integrationTab, setIntegrationTab] = useState('iCloud 日历');
   return <div className="settings-page">
+    <label className="settings-mobile-picker">设置分类<Select value={section} onChange={event=>onSection(event.target.value as SettingsSection)}>{settingsSections.map(([key,label])=><option key={key} value={key}>{label}</option>)}</Select></label>
     <nav className="settings-navigation" aria-label="设置分类">{settingsSections.map(([key, label]) =>
       <button key={key} aria-current={section === key ? 'page' : undefined} onClick={() => onSection(key)}>{label}</button>
     )}</nav>
