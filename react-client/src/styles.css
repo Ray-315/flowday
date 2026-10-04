@@ -64,7 +64,7 @@ body {
 }
 button,
 input,
-select {
+:is(select, .select-trigger) {
   font: inherit;
 }
 button {
@@ -76,12 +76,12 @@ button {
 }
 button,
 input,
-select {
+:is(select, .select-trigger) {
   outline-offset: 4px;
 }
 button:focus-visible,
 input:focus-visible,
-select:focus-visible {
+:is(select, .select-trigger):focus-visible {
   outline: 2px solid var(--accent);
 }
 button {
@@ -95,7 +95,7 @@ button:active:not(.event-block) {
   transform: translateY(1px);
 }
 input,
-select {
+:is(select, .select-trigger) {
   min-width: 0;
   color: var(--ink);
 }
@@ -1094,7 +1094,7 @@ h1 {
   font-size: 11px;
 }
 .field input,
-.field select {
+.field :is(select, .select-trigger) {
   height: 42px;
   border: 1px solid var(--stroke);
   background: var(--input);
@@ -1104,7 +1104,7 @@ h1 {
   transition: border-color 0.16s;
 }
 .field input:focus,
-.field select:focus {
+.field :is(select, .select-trigger):focus {
   border-color: var(--accent);
 }
 .field input[type='datetime-local'] {
@@ -1901,7 +1901,7 @@ h1 {
 }
 :root[data-theme='dark'] .search,
 :root[data-theme='dark'] .field input,
-:root[data-theme='dark'] .field select,
+:root[data-theme='dark'] .field :is(select, .select-trigger),
 :root[data-theme='dark'] .secondary-button {
   border-color: transparent;
 }
@@ -1909,7 +1909,7 @@ h1 {
   background: var(--surface);
 }
 :root[data-theme='dark'] .field input:focus,
-:root[data-theme='dark'] .field select:focus {
+:root[data-theme='dark'] .field :is(select, .select-trigger):focus {
   border-color: var(--accent);
 }
 @media (max-width: 700px) {

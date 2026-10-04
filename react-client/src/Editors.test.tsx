@@ -76,7 +76,7 @@ it('rejects cyclic task parents before invoking persistence', async () => {
     ),
   );
   const select = [...container.querySelectorAll('select')].find(
-    (element) => element.previousElementSibling?.textContent === '父级任务',
+    (element) => element.closest('label')?.querySelector('span')?.textContent === '父级任务',
   )!;
   await act(() => {
     select.value = 'a';

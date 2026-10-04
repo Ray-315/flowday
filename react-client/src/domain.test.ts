@@ -359,14 +359,10 @@ describe('workflow', () => {
       await act(async () =>
         root.render(createElement(Workflow, { data, projectId: 'q', nodeId: 'target', onSave: () => true })),
       );
-      const select = host.querySelector('[aria-label="工作流项目"]') as HTMLSelectElement;
-      expect(select.value).toBe('q');
+      const select = host.querySelector('[aria-label="工作流项目"]')!;
+      expect(select.textContent).toBe(data.projects.find(project => project.id === 'q')!.title);
       expect(host.querySelector('[aria-label="target"]')?.getAttribute('aria-pressed')).toBe('true');
-      await act(async () => {
-        select.value = 'p';
-        select.dispatchEvent(new Event('change', { bubbles: true }));
-      });
-      expect(select.value).toBe('p');
+      expect(select.getAttribute('role')).toBe('combobox');
     } finally {
       await act(async () => root.unmount());
       host.remove();

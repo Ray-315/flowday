@@ -109,7 +109,7 @@ export function QuickCapture({
       >
         <input
           aria-label="快速输入"
-          placeholder="快速输入…"
+          placeholder="快速记录任务、日程或灵感…"
           value={text}
           onChange={(event) => setText(event.target.value)}
         />

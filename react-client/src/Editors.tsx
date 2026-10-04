@@ -1,3 +1,4 @@
+import { Select } from './Select';
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { motion } from 'motion/react';
 import { isTauri } from '@tauri-apps/api/core';
@@ -378,7 +379,7 @@ export function Editor({
           {kind !== 'project' && (
             <label className="field">
               <span>项目</span>
-              <select value={projectId} onChange={(event) => setProjectId(event.target.value)}>
+              <Select value={projectId} onChange={(event) => setProjectId(event.target.value)}>
                 <option value="">无项目</option>
                 {data.projects
                   .filter((project) => !project.archived && !project.deletedAt)
@@ -387,7 +388,7 @@ export function Editor({
                       {project.title}
                     </option>
                   ))}
-              </select>
+              </Select>
             </label>
           )}
           {kind === 'task' && (
@@ -514,7 +515,7 @@ export function Editor({
               <>
                 <label className="field">
                   <span>父级{title}</span>
-                  <select
+                  <Select
                     value={String(advanced.parentId ?? '')}
                     onChange={(event) => change('parentId', event.target.value || null)}
                   >
@@ -526,7 +527,7 @@ export function Editor({
                           {value.title}
                         </option>
                       ))}
-                  </select>
+                  </Select>
                 </label>
                 <label className="toggle-field">
                   <span>归档</span>
@@ -554,7 +555,7 @@ export function Editor({
                 <div className="field-pair">
                   <label className="field">
                     <span>状态</span>
-                    <select
+                    <Select
                       value={String(advanced.status)}
                       onChange={(event) => change('status', event.target.value)}
                     >
@@ -569,11 +570,11 @@ export function Editor({
                           {label}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </label>
                   <label className="field">
                     <span>难度</span>
-                    <select
+                    <Select
                       value={String(advanced.difficulty)}
                       onChange={(event) => change('difficulty', event.target.value)}
                     >
@@ -586,7 +587,7 @@ export function Editor({
                           {label}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </label>
                 </div>
                 <label className="field">
@@ -677,7 +678,7 @@ export function Editor({
                   <>
                     <label className="field">
                       <span>关联任务</span>
-                      <select
+                      <Select
                         value={String(advanced.taskId ?? '')}
                         onChange={(event) => change('taskId', event.target.value || null)}
                       >
@@ -689,7 +690,7 @@ export function Editor({
                               {task.title}
                             </option>
                           ))}
-                      </select>
+                      </Select>
                     </label>
                     {['completed', 'locked'].map((key) => (
                       <label className="toggle-field" key={key}>
@@ -706,7 +707,7 @@ export function Editor({
                 )}
                 <label className="field">
                   <span>重复</span>
-                  <select value={frequency} onChange={(event) => setFrequency(event.target.value)}>
+                  <Select value={frequency} onChange={(event) => setFrequency(event.target.value)}>
                     {[
                       ['', '不重复'],
                       ['daily', '每天'],
@@ -718,7 +719,7 @@ export function Editor({
                         {label}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
                 {frequency && (
                   <>
@@ -755,15 +756,15 @@ export function Editor({
                 {!!item?.seriesId && (
                   <label className="field">
                     <span>修改范围</span>
-                    <select value={scope} onChange={(event) => setScope(event.target.value)}>
+                    <Select value={scope} onChange={(event) => setScope(event.target.value)}>
                       <option value="thisOnly">仅本次</option>
                       <option value="thisAndFuture">本次及以后</option>
-                    </select>
+                    </Select>
                   </label>
                 )}
                 <label className="field">
                   <span>强提醒</span>
-                  <select
+                  <Select
                     value={advanced.strongReminder == null ? '' : String(advanced.strongReminder)}
                     onChange={(event) =>
                       change(
@@ -775,7 +776,7 @@ export function Editor({
                     <option value="">继承默认</option>
                     <option value="true">开启</option>
                     <option value="false">关闭</option>
-                  </select>
+                  </Select>
                 </label>
                 {[
                   'reminderInterval',
@@ -809,7 +810,7 @@ export function Editor({
                   <>
                     <label className="field">
                       <span>提醒规则</span>
-                      <select
+                      <Select
                         value={
                           Array.isArray(advanced.reminderRules)
                             ? advanced.reminderRules.length === 0
@@ -831,14 +832,14 @@ export function Editor({
                         <option value="default">默认规则</option>
                         <option value="off">关闭</option>
                         <option value="custom">自定义</option>
-                      </select>
+                      </Select>
                     </label>
                     {Array.isArray(advanced.reminderRules) &&
                       advanced.reminderRules.map((rule: Record<string, unknown>, index: number) => (
                         <div className="field-pair" key={index}>
                           <label className="field">
                             <span>提醒 {index + 1}</span>
-                            <select
+                            <Select
                               value={rule.dueAt ? 'absolute' : 'relative'}
                               onChange={(event) =>
                                 change(
@@ -855,7 +856,7 @@ export function Editor({
                             >
                               <option value="relative">提前分钟</option>
                               <option value="absolute">指定时间</option>
-                            </select>
+                            </Select>
                           </label>
                           <label className="field">
                             <span>{rule.dueAt ? '时间' : '分钟'}</span>
@@ -947,14 +948,14 @@ export function Editor({
             ))}
             <label className="field">
               <span>类型</span>
-              <select
+              <Select
                 value={attachmentKind}
                 onChange={(event) => setAttachmentKind(event.target.value as Attachment['kind'])}
               >
                 <option value="url">链接</option>
                 <option value="markdown">Markdown</option>
                 <option value="file">文件</option>
-              </select>
+              </Select>
             </label>
             {attachmentKind === 'file' ? (
               <input

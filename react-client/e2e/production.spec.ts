@@ -149,8 +149,10 @@ test('advanced task fields survive persistence and batch archive/trash/restore',
   const dialog = page.getByRole('dialog', { name: '编辑任务' });
   await dialog.locator('summary').filter({ hasText: '更多设置' }).click();
   await dialog.getByLabel('描述', { exact: true }).fill('保留高级字段');
-  await dialog.getByLabel(/^状态/).selectOption('doing');
-  await dialog.getByLabel(/^难度/).selectOption('high');
+  await dialog.getByRole('combobox', { name: /^状态/ }).click();
+  await page.getByRole('option', { name: '进行中', exact: true }).click();
+  await dialog.getByRole('combobox', { name: /^难度/ }).click();
+  await page.getByRole('option', { name: '高', exact: true }).click();
   await dialog.getByLabel('预计耗时（分钟）', { exact: true }).fill('90');
   await dialog.getByLabel('实际耗时（分钟）', { exact: true }).fill('35');
   await dialog.getByLabel('计划开始', { exact: true }).fill('2050-10-05T09:00');
@@ -285,11 +287,13 @@ test('workflow task-node creation and condition branch selection survive reload'
   await page.locator('.workflow-toolbar').getByRole('button', { name: '节点', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('节点名称', { exact: true }).fill('浏览器新增节点');
-  await dialog.getByLabel('节点类型', { exact: true }).selectOption('task');
+  await dialog.getByRole('combobox', { name: '节点类型', exact: true }).click();
+  await page.getByRole('option', { name: '任务', exact: true }).click();
   await dialog.getByRole('button', { name: '保存', exact: true }).click();
   await expect(page.locator('.workflow-node').filter({ hasText: '浏览器新增节点' })).toBeVisible();
   await page.getByRole('button', { name: '分支判断', exact: true }).click();
-  await page.getByLabel('条件出口', { exact: true }).selectOption('yes');
+  await page.getByRole('combobox', { name: '条件出口', exact: true }).click();
+  await page.getByRole('option', { name: '通过', exact: true }).click();
   await page.reload();
   const saved = await persisted(page);
   expect(saved.nodes.find((node: { id: string }) => node.id === 'condition')).toMatchObject({
@@ -361,12 +365,14 @@ test('calendar display preferences persist and Sunday-first mobile week stays wi
   await seed(page, data);
   await page.getByRole('button', { name: '日历', exact: true }).click();
   const calendar = page.locator('.calendar-full');
-  await calendar.getByLabel('重叠样式').selectOption('层叠');
+  await calendar.getByRole('combobox', { name: '重叠样式' }).click();
+  await page.getByRole('option', { name: '层叠', exact: true }).click();
   const stacked = await calendar
     .locator('.event-block')
     .evaluateAll((blocks) => blocks.map((block) => (block as HTMLElement).style.left));
   expect(stacked[0]).not.toBe(stacked[1]);
-  await calendar.getByLabel('重叠样式').selectOption('聚合');
+  await calendar.getByRole('combobox', { name: '重叠样式' }).click();
+  await page.getByRole('option', { name: '聚合', exact: true }).click();
   await expect(calendar.locator('.event-block')).toHaveCount(1);
   await calendar.getByRole('button', { name: '查看 2 个重叠日程' }).click();
   await expect(

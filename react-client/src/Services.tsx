@@ -1,3 +1,4 @@
+import { Select } from './Select';
 import { useEffect, useState } from 'react';
 import {
   FlowApi,
@@ -415,7 +416,7 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
             </label>
             <label>
               任务
-              <select value={taskId} onChange={(event) => setTaskId(event.target.value)}>
+              <Select value={taskId} onChange={(event) => setTaskId(event.target.value)}>
                 <option value="">无</option>
                 {workspace.tasks
                   .filter((task) => !task.deletedAt)
@@ -424,7 +425,7 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
                       {task.title}
                     </option>
                   ))}
-              </select>
+              </Select>
             </label>
             <label className="service-choice">
               <input type="checkbox" checked={strong} onChange={(event) => setStrong(event.target.checked)} />
@@ -786,7 +787,7 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
           >
             <label>
               所属对象
-              <select
+              <Select
                 required
                 value={attachmentOwner}
                 onChange={(event) => setAttachmentOwner(event.target.value)}
@@ -806,7 +807,7 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
                       {item.title}
                     </option>
                   ))}
-              </select>
+              </Select>
             </label>
             <label>
               名称
@@ -818,11 +819,11 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
             </label>
             <label>
               类型
-              <select value={attachmentKind} onChange={(event) => setAttachmentKind(event.target.value)}>
+              <Select value={attachmentKind} onChange={(event) => setAttachmentKind(event.target.value)}>
                 <option value="url">链接</option>
                 <option value="markdown">Markdown</option>
                 <option value="file">文件</option>
-              </select>
+              </Select>
             </label>
             {attachmentKind === 'file' ? (
               <label>
@@ -945,14 +946,14 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
                 <>
                   <label>
                     日历
-                    <select value={calendarUrl} onChange={(event) => setCalendarUrl(event.target.value)}>
+                    <Select value={calendarUrl} onChange={(event) => setCalendarUrl(event.target.value)}>
                       <option value="">选择日历</option>
                       {calendars.map((item) => (
                         <option value={String(item.url)} key={String(item.url)}>
                           {String(item.displayName)}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </label>
                   <button
                     type="button"

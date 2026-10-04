@@ -1,3 +1,4 @@
+import { Select } from './Select';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronLeft, ChevronRight, MapPin, Plus } from './icons';
@@ -292,7 +293,7 @@ export function Calendar({
               {label}
             </button>
           ))}
-          <select
+          <Select
             aria-label="重叠样式"
             value={overlap}
             disabled={!onSave}
@@ -303,7 +304,7 @@ export function Calendar({
             {['并排', '层叠', '聚合'].map((value) => (
               <option key={value}>{value}</option>
             ))}
-          </select>
+          </Select>
         </div>
       )}
       {error && (
