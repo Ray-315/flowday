@@ -126,7 +126,6 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
   const call = (method: string, path: string, data?: JsonObject) =>
     api.feature(session.token, method, path, data);
   async function load(active = tab) {
-    if (active === 'AI') setItems(rows((await call('GET', '/audit')).records));
     if (active === '提醒') setItems(rows((await call('GET', '/reminders')).reminders));
     if (active === '备份') setItems(rows((await call('GET', '/backups')).backups));
     if (active === '附件') setItems(rows((await call('GET', '/attachments')).attachments));
@@ -356,7 +355,6 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
                       });
                     });
                     setPreview(null);
-                    await load();
                   })
                 }
               >
@@ -364,32 +362,6 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
               </button>
             </>
           )}
-          <h2 className="service-history-title">操作记录</h2>
-          {!items.length && <p className="section-description">应用方案后，可以在这里查看和撤销操作。</p>}
-          {items.map((item) => (
-            <div className="service-row" key={String(item.id)}>
-              <p>
-                {String(item.action)} · {date(item.createdAt)}
-              </p>
-              {item.input != null && <p>{String(item.input)}</p>}
-              {item.reversible === true && (
-                <button
-                  disabled={busy}
-                  onClick={() => {
-                    if (window.confirm('撤销这次操作？'))
-                      void run(async () => {
-                        await sync.remoteMutation((baseVersion) =>
-                          call('POST', `/audit/${encodeURIComponent(String(item.id))}/undo`, { baseVersion }),
-                        );
-                        await load();
-                      });
-                  }}
-                >
-                  撤销
-                </button>
-              )}
-            </div>
-          ))}
         </>
       )}
       {tab === '提醒' && (

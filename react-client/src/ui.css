@@ -101,7 +101,6 @@ button:disabled { opacity:.45; cursor:default; }
 .service-disclosure { border-top: 1px solid var(--stroke); border-bottom: 1px solid var(--stroke); margin: 32px 0; padding: 18px 0; }
 .service-disclosure summary { cursor: pointer; font-size: 15px; font-weight: 500; }
 .service-disclosure summary span { font-size: 13px; font-weight: 400; color: var(--secondary); margin-left: 16px; }
-.service-panel .service-history-title { font-size: 16px; margin: 32px 0 12px; }
 .service-panel[aria-label='AI 助手'] > form > button { justify-self: start; min-width: 128px; }
 .service-panel[aria-label='AI 助手'] textarea { min-height: 144px; }
 @media (max-width: 640px) {
