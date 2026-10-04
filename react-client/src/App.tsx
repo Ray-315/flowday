@@ -85,6 +85,8 @@ export default function App() {
   const [initial] = useState(load);
   const [data, setData] = useState(initial.data);
   const [error, setError] = useState(initial.error);
+  const [sessionError, setSessionError] = useState('');
+  const authIntent = useRef(0);
   const [storageBlocked, setStorageBlocked] = useState(Boolean(initial.error));
   const [page, setPage] = useState<Page>('today');
   const [day, setDay] = useState(localDay);
@@ -174,8 +176,9 @@ export default function App() {
     return controller;
   }
   async function switchSession(next:AuthSession|null, persist=true) {
+    if(persist)authIntent.current++;
     const target=next ? `${api.baseUrl}:${next.user.id}` : 'guest';
-    if(target===scopeRef.current&&(!next||next.token===syncRef.current?.session.token)) {if(persist&&next)await credentialVault.write('session',JSON.stringify(next));setSession(next);return;}
+    if(target===scopeRef.current&&(!next||next.token===syncRef.current?.session.token)) {if(persist&&next)await credentialVault.write('session',JSON.stringify(next));setSession(next);setSessionError('');return;}
     const generation=++scopeGeneration.current;
     const previousScope=scopeRef.current;
     switchingRef.current=true;
@@ -191,6 +194,7 @@ export default function App() {
       scopeRef.current=target;dataRef.current=workspace;
       setData(workspace);setStorageBlocked(false);setProject(null);setQuery('');setEditing(null);setAuthOpen(false);setTool(null);setWorkflowFocus({projectId:null,nodeId:null});setCaptureText('');setSession(next);
       syncRef.current=controller;setSync(controller);
+      setSessionError('');
       switchingRef.current=false;
       if(controller)void controller.sync();
     } catch(failure) {
@@ -200,15 +204,27 @@ export default function App() {
   }
   useEffect(()=>{
     let disposed=false;
+    const intent=authIntent.current;
+    const current=()=>!disposed&&intent===authIntent.current;
     if(!preview)void credentialVault.read('session').then(async source=>{
-      if(!source||disposed)return;
+      if(!source||!current())return;
       const value=JSON.parse(source) as AuthSession;
       if(typeof value.token!=='string'||!value.user?.id)throw new Error('会话数据无效');
       try {value.user=await api.me(value.token);}
-      catch(failure){if(failure instanceof ApiException&&failure.status===401){await credentialVault.delete('session');throw new Error('登录已过期');}}
-      if(disposed)return;
+      catch(failure){
+        if(!current())return;
+        if(failure instanceof ApiException&&failure.status===401){
+          await credentialVault.delete('session');
+          throw new Error('登录已过期，请重新登录。');
+        }
+      }
+      if(!current())return;
       await switchSession(value,false);
-    }).catch(()=>{if(!disposed)setError('无法恢复登录会话，请重新登录。');});
+    }).catch(failure=>{
+      if(!current())return;
+      const detail=failure instanceof Error?failure.message:typeof failure==='string'?failure:'请重新登录。';
+      setSessionError(`无法恢复登录会话：${detail}`);
+    });
     return()=>{disposed=true;syncRef.current?.dispose();};
   },[]);
   useEffect(()=>{
@@ -428,10 +444,10 @@ export default function App() {
               </label>
             </div>
           </header>
-          {error && (
+          {(error || sessionError) && (
             <div className="error-message" role="alert">
-              {error}
-              <button className="icon-button" aria-label="关闭错误" onClick={() => setError('')}>
+              {error || sessionError}
+              <button className="icon-button" aria-label="关闭错误" onClick={() => error ? setError('') : setSessionError('')}>
                 <X size={16} />
               </button>
             </div>

@@ -3,10 +3,11 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { emptyWorkspace, type Workspace } from './workspace';
 import { credentialVault, workspaceStorage } from './storage';
-import { FlowApi } from './api';
+import { FlowApi, ApiException, type AuthSession } from './api';
 import App from './App';
 
 const callbacks = vi.hoisted(() => ({
+  authenticate: null as null | ((session: AuthSession | null) => Promise<void>),
   restore: null as null | ((data: Workspace) => boolean),
   save: null as null | ((data: Workspace) => boolean),
 }));
@@ -18,6 +19,12 @@ vi.mock('./Management', async (importOriginal) => ({
   },
   Preferences: ({ onSave }: { onSave: (data: Workspace) => boolean }) => {
     callbacks.save = onSave;
+    return null;
+  },
+}));
+vi.mock('./Account', () => ({
+  Account: ({ onSession }: { onSession: (session: AuthSession | null) => Promise<void> }) => {
+    callbacks.authenticate = onSession;
     return null;
   },
 }));
@@ -33,6 +40,7 @@ vi.mock('./api', async (importOriginal) => ({
       public session: unknown,
     ) {}
     async sync() {}
+    subscribe() { return () => {}; }
     dispose() {}
   },
 }));
@@ -41,6 +49,7 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   callbacks.restore = callbacks.save = null;
+  callbacks.authenticate = null;
 });
 
 describe('account switching', () => {
@@ -114,4 +123,46 @@ describe('account switching', () => {
       }
     },
   );
+});
+
+it.each(['failed-before', 'failed-after', 'stale-after', 'expired-after'] as const)('keeps a new login when restoration is %s', async timing => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener() {}, removeEventListener() {} }));
+  vi.stubGlobal('localStorage', { getItem: () => null, setItem() {}, removeItem() {} });
+  let resolveRead!: (value: string) => void;
+  let rejectRead!: (reason: unknown) => void;
+  vi.spyOn(credentialVault, 'read').mockImplementation(() => new Promise((resolve, reject) => { resolveRead = resolve; rejectRead = reject; }));
+  vi.spyOn(credentialVault, 'write').mockResolvedValue();
+  vi.spyOn(workspaceStorage, 'flush').mockResolvedValue();
+  vi.spyOn(workspaceStorage, 'load').mockResolvedValue(emptyWorkspace());
+  let rejectMe!: (reason: unknown) => void;
+  const me = vi.spyOn(FlowApi.prototype, 'me').mockImplementation(() => new Promise((_resolve, reject) => { rejectMe = reject; }));
+  const remove = vi.spyOn(credentialVault, 'delete').mockResolvedValue();
+  const host = document.createElement('div');
+  document.body.append(host);
+  const root = createRoot(host);
+  try {
+    await act(async () => root.render(createElement(App)));
+    if(timing === 'expired-after') await act(async () => resolveRead(JSON.stringify({token:'expired-test-token',user:{id:'old-user'}})));
+    if(timing === 'failed-before') {
+      await act(async () => rejectRead('钥匙串暂时不可用'));
+      expect(host.textContent).toContain('钥匙串暂时不可用');
+    }
+    await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="账号与安全"]')!.click());
+    const user = { id:'new-user', email:'test@example.test', displayName:'新登录用户' };
+    await act(async () => callbacks.authenticate!({token:'new-test-token',user}));
+    if(timing === 'failed-after') await act(async () => rejectRead('旧请求失败'));
+    if(timing === 'stale-after') await act(async () => resolveRead(JSON.stringify({token:'old-test-token',user:{...user,id:'old-user'}})));
+    expect(host.textContent).toContain('新登录用户');
+    expect(host.textContent).not.toContain('无法恢复登录会话');
+    if(timing === 'expired-after') {
+      await act(async () => rejectMe(new ApiException(401, 'UNAUTHORIZED', '登录已过期')));
+      expect(host.textContent).toContain('新登录用户');
+      expect(host.textContent).not.toContain('无法恢复登录会话');
+    } else expect(me).not.toHaveBeenCalled();
+    expect(remove).not.toHaveBeenCalled();
+  } finally {
+    await act(async () => root.unmount());
+    host.remove();
+  }
 });
