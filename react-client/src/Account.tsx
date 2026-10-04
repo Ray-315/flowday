@@ -60,7 +60,7 @@ export function Account({ api, session, onSession, sync, workspace, onSave, onCo
       await operation();
     } catch (failure) {
       const messages:Record<string,string>={INVALID_CREDENTIALS:'邮箱或密码不正确',UNAUTHORIZED:'登录已过期，请重新登录',RATE_LIMITED:'操作过于频繁，请稍后重试',EMAIL_EXISTS:'此邮箱已注册',INVALID_REGISTRATION_CODE:'验证码无效或已过期，请重新获取',MAIL_NOT_CONFIGURED:'注册邮件服务尚未配置',CODE_COOLDOWN:'请稍后再获取验证码',CODE_SEND_LIMIT:'验证码发送次数过多，请稍后重试',MAIL_DELIVERY_FAILED:'验证码发送失败，请稍后重试'};
-      setError(failure instanceof ApiException ? messages[failure.code] ?? failure.message : failure instanceof Error ? failure.message : '操作失败');
+      setError(failure instanceof ApiException ? messages[failure.code] ?? failure.message : failure instanceof Error ? failure.message : typeof failure === 'string' ? failure : '操作失败');
     } finally {
       setBusy(false);
     }
@@ -73,7 +73,12 @@ export function Account({ api, session, onSession, sync, workspace, onSave, onCo
         : await api.login(email.trim(), password);
       setPassword('');
       setCode('');
-      await onSession(next);
+      try {
+        await onSession(next);
+      } catch (failure) {
+        const detail = failure instanceof Error ? failure.message : typeof failure === 'string' ? failure : '无法初始化本机登录状态';
+        throw new Error(`${register ? '账号已创建' : '账号验证成功'}，但未能完成本机登录：${detail}`);
+      }
     });
   }
   if (!session) return <div className="auth-layout">

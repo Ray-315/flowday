@@ -34,7 +34,7 @@ Windows 构建需要 Rust、Microsoft C++ Build Tools 和 WebView2。安装器�
 
 工作区位于应用数据目录 workspaces/<编码后的账号范围>/workspace.json，访客和各账号独立。试用 localStorage 会迁移到文件；保留原键和应用标识以兼容已有数据，不覆盖 Flutter 数据目录。
 
-写入采用临时文件、同步磁盘后原子替换。原生客户端不受浏览器缓存配额限制；失败时保留可导出的当前数据并显示错误。导入或云替换前保存保护副本。令牌只保存在 Windows Credential Manager，不进入工作区或备份。浏览器开发模式不持久保存登录凭据。
+写入采用临时文件、同步磁盘后原子替换。原生客户端不受浏览器缓存配额限制；失败时保留可导出的当前数据并显示错误。导入或云替换前保存保护副本。令牌在 Windows 上保存在 Credential Manager，在 macOS 上保存在系统钥匙串，不进入工作区或备份。浏览器开发模式不持久保存登录凭据。
 
 API 默认使用 https://flowday.mtrx.pro/api/v1 。本轮未部署或修改生产服务。服务端兼容补丁在 ../server/src/validation.js，需随服务端更新部署，以接受今日布局数组、系统时区和旧通知的可空类型。
 
@@ -56,6 +56,6 @@ npm test
 
 Windows 客户端及本地服务协议已实现。Apple、飞书、邮件和 AI 提供商需要服务器配置与实际账号，未进行生产端到端验收。Windows 系统通知标识要求安装客户端；本地提醒在客户端运行期间触发，关闭后的提醒由服务端队列及其已配置渠道处理。
 
-iOS/Android/macOS 发行包和原生安全存储未完成，灵动岛未接入。Windows 和浏览器测试不能代替其他平台设备验收。ICS 无结束重复和 RECURRENCE-ID 调课实例保持 Flutter 原有拒绝边界。
+macOS 可本地构建 `.app`，登录凭据使用系统钥匙串；签名、公证和正式发行尚未完成。iOS/Android 发行包和原生安全存储未完成，灵动岛未接入。Windows 和浏览器测试不能代替其他平台设备验收。ICS 无结束重复和 RECURRENCE-ID 调课实例保持 Flutter 原有拒绝边界。
 
 字体使用现有 HarmonyOS Sans SC 全量 WOFF2，无远程字体请求。
