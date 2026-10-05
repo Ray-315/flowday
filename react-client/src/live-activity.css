@@ -10,3 +10,9 @@
 .live-activity-panel .primary-button { justify-self: start; padding: 10px 18px; }
  .live-activity-trigger { display: inline-flex; align-items: center; gap: 6px; }
 @media (max-width: 700px) { .live-activity-panel { margin: 0; padding: 0 20px 24px; } }
+
+.live-activity-automatic { padding-bottom: 22px; margin-bottom: 20px; border-bottom: 1px solid var(--stroke); }
+.live-activity-automatic h3, .live-activity-manual-title { font-size: 14px; margin: 0 0 6px; }
+.live-activity-panel .live-activity-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.live-activity-toggle input[type=checkbox] { width: 18px; height: 18px; min-height: 18px; accent-color: var(--accent); }
+.live-activity-panel .live-activity-lead { grid-template-columns: 1fr 80px; align-items: center; }

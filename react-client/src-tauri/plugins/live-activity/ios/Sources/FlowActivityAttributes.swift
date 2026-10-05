@@ -10,4 +10,5 @@ struct FlowActivityAttributes: ActivityAttributes {
     }
     var scope: String
     var eventId: String?
+    var upcoming: Bool?
 }

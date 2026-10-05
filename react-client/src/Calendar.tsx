@@ -372,12 +372,12 @@ export function Calendar({
                         {item.allDay ? '全天' : time(item.start)} · {item.title}
                       </button>
                       {onSave && (
-                        <input
-                          type="checkbox"
-                          aria-label={`完成日程：${item.title}`}
-                          checked={item.completed === true}
-                          onChange={() => persist(setEventCompleted(data, item.id, !item.completed))}
-                        />
+                        <label className="task-checkbox calendar-event-checkbox">
+                          <input type="checkbox" aria-label={`完成日程：${item.title}`}
+                            checked={item.completed === true}
+                            onChange={() => persist(setEventCompleted(data, item.id, !item.completed))}/>
+                          <span><svg viewBox="0 0 16 16" aria-hidden="true"><motion.path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" initial={false} animate={{ pathLength: item.completed ? 1 : 0, opacity: item.completed ? 1 : 0 }} transition={{ duration: .18 }}/></svg></span>
+                        </label>
                       )}
                     </div>
                   ))

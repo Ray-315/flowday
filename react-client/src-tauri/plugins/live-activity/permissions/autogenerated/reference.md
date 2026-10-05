@@ -36,6 +36,32 @@ Denies the end command without any pre-configured scope.
 <tr>
 <td>
 
+`live-activity:allow-schedule`
+
+</td>
+<td>
+
+Enables the schedule command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`live-activity:deny-schedule`
+
+</td>
+<td>
+
+Denies the schedule command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `live-activity:allow-start`
 
 </td>

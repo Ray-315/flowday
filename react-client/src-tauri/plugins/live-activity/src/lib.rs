@@ -24,9 +24,13 @@ async fn start<R: Runtime>(app: tauri::AppHandle<R>, data: serde_json::Value) ->
 async fn end<R: Runtime>(app: tauri::AppHandle<R>) -> Result<serde_json::Value, String> {
     call(&app, "end", serde_json::json!({}))
 }
+#[tauri::command]
+async fn schedule<R: Runtime>(app: tauri::AppHandle<R>, data: serde_json::Value) -> Result<serde_json::Value, String> {
+    call(&app, "schedule", data)
+}
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::new("live-activity")
-        .invoke_handler(tauri::generate_handler![status, start, end])
+        .invoke_handler(tauri::generate_handler![status, start, end, schedule])
         .setup(|_app, _api| {
             #[cfg(target_os = "ios")]
             _app.manage(Native(_api.register_ios_plugin(init_plugin_live_activity)?));

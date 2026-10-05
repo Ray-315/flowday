@@ -13,7 +13,7 @@ struct FlowDayActivity: Widget {
             HStack(spacing: 16) {
                 Image(systemName: "timer").font(.title2).foregroundStyle(accent)
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("FlowDay · 专注进行中").font(.caption).foregroundStyle(.secondary)
+                    Text(context.attributes.upcoming == true ? "FlowDay · 距离日程开始" : "FlowDay · 专注进行中").font(.caption).foregroundStyle(.secondary)
                     Text(context.state.title).font(.headline).lineLimit(2)
                 }
                 Spacer(minLength: 8)
@@ -35,7 +35,7 @@ struct FlowDayActivity: Widget {
                         Text(context.state.title).font(.headline).lineLimit(2)
                         ProgressView(timerInterval: context.state.start...context.state.end, countsDown: false)
                             .tint(accent).labelsHidden()
-                        Text(context.isStale ? "时间已到，打开 FlowDay 结束" : "点按返回 FlowDay")
+                        Text(context.isStale ? (context.attributes.upcoming == true ? "日程已开始" : "时间已到，打开 FlowDay 结束") : "点按返回 FlowDay")
                             .font(.caption).foregroundStyle(.secondary)
                     }.padding(.vertical, 8)
                 }
