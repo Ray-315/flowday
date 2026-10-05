@@ -14,6 +14,8 @@ export function configureLiveActivity(root, env) {
   project.options.deploymentTarget.iOS = '15.0';
   target.deploymentTarget = '15.0';
   target.info.properties.NSSupportsLiveActivities = true;
+  target.info.properties.NSCalendarsUsageDescription = '允许 FlowDay 与你选择的苹果日历双向同步日程。';
+  target.info.properties.NSCalendarsFullAccessUsageDescription = '允许 FlowDay 读取、创建和更新你选择的苹果日历日程。';
   for (const source of target.sources) {
     if (source.path === 'Externals') source.excludes = [...new Set([...(source.excludes || []), '**/*.a'])];
   }

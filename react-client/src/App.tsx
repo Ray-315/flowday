@@ -1,3 +1,4 @@
+import { AppleCalendarSync } from './AppleCalendarSync';
 import { LiveActivity } from './LiveActivity';
 import { endActivityForOtherScope } from './liveActivityBridge';
 import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from 'react';
@@ -441,6 +442,7 @@ export default function App() {
               {page==='tasks'&&<button className="context-action" onClick={()=>navigate('attachments')}>附件管理</button>}
               {page==='attachments'&&<button className="context-action" onClick={()=>navigate('tasks')}>返回任务</button>}
               {page==='today'&&<button className="context-action" onClick={()=>setTool('today')}><SlidersHorizontalIcon size={18}/><span>定制今天</span></button>}
+              {page==='calendar'&&<AppleCalendarSync data={data} onSave={commit} scope={renderedScope}/>}
               {page==='calendar'&&<button className="context-action" onClick={()=>setTool('courses')}><GraduationCapIcon size={19}/><span>课程导入</span></button>}
               <label className="search">
                 <Search size={17} />

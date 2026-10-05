@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>NSCalendarsUsageDescription</key><string>允许 FlowDay 与你选择的苹果日历双向同步日程。</string>
+<key>NSCalendarsFullAccessUsageDescription</key><string>允许 FlowDay 读取、创建和更新你选择的苹果日历日程。</string>
+</dict></plist>

@@ -26,7 +26,7 @@ import {
 const colors = [0xff4b70e8, 0xff9878d0, 0xff309b87, 0xffc17c56, 0xffb39447, 0xffc96679];
 type Attachment = { id: string; title: string; kind: 'url' | 'markdown' | 'file'; content: string };
 
-function Modal({
+export function Modal({
   title,
   onClose,
   children,

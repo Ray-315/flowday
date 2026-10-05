@@ -992,6 +992,7 @@ dependencies = [
  "serde_json",
  "tauri",
  "tauri-build",
+ "tauri-plugin-apple-calendar",
  "tauri-plugin-dialog",
  "tauri-plugin-fs",
  "tauri-plugin-live-activity",
@@ -3753,6 +3754,17 @@ dependencies = [
  "serde_json",
  "tauri-utils",
  "walkdir",
+]
+
+[[package]]
+name = "tauri-plugin-apple-calendar"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "swift-rs",
+ "tauri",
+ "tauri-plugin",
+ "tokio",
 ]
 
 [[package]]
