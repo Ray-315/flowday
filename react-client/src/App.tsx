@@ -301,7 +301,7 @@ export default function App() {
   const percentage = dayTasks.length ? Math.round((completed / dayTasks.length) * 100) : 0;
   const defaultToday=isDefaultTodayLayout(data);
   const openWorkflow=(projectId:string,nodeId?:string)=>{setWorkflowFocus({projectId,nodeId:nodeId??null});setPage('workflow');setQuery('');};
-  const quickCapture=<QuickCapture data={data} onSave={commit} onEdit={setEditing} onParse={text=>{setCaptureText(text);navigate('services');}}/>;
+  const quickCapture=<QuickCapture data={data} onSave={commit} onParse={text=>{setCaptureText(text);navigate('services');}}/>;
   const todayTaskPanel=<Tasks data={data} day={day} query={query} project={null} onEdit={setEditing} onSave={commit} onToggle={id=>commit(setTaskStatus(data,id,data.tasks.find(task=>task.id===id)?.status==='done'?'todo':'done'))}/>;
   function todayModule(key:string){
     if(key==='capture')return quickCapture;
