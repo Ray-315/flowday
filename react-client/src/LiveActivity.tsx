@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Select } from './Select';
+import { Modal } from './Editors';
 import { activityCall, eligibleEvents, unavailable, type ActivityStatus } from './liveActivityBridge';
 import type { Workspace } from './workspace';
 import './live-activity.css';
 
 export function LiveActivity({ workspace, scope, visible }: { workspace: Workspace; scope: string; visible: boolean }) {
+  const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<ActivityStatus>(unavailable);
   const [title, setTitle] = useState('专注时间');
   const [minutes, setMinutes] = useState(25);
@@ -60,8 +62,12 @@ export function LiveActivity({ workspace, scope, visible }: { workspace: Workspa
     } catch (failure) { setError(failure instanceof Error ? failure.message : String(failure)); }
     finally { inFlight.current = false; setBusy(false); }
   }
-  return <section className="live-activity-panel" aria-label="灵动岛与锁屏">
-    <div className="live-activity-heading"><h2>灵动岛与锁屏</h2><span>专注倒计时</span></div>
+  return <>
+    <button className="context-action live-activity-trigger" aria-haspopup="dialog" onClick={() => setOpen(true)}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="7" width="18" height="10" rx="5" stroke="currentColor" strokeWidth="1.6"/><circle cx="17" cy="12" r="1.5" fill="currentColor"/></svg>
+      <span>{active ? '专注中' : '灵动岛'}</span>
+    </button>
+    {open && <Modal title="灵动岛与锁屏" onClose={() => { if (!busy) setOpen(false); }}><section className="live-activity-panel" aria-label="灵动岛设置">
     {!status.enabled ? <p>请在 iPhone 设置中允许 FlowDay「实时活动」，然后返回这里。</p> : active ? <>
       <p role="status"><strong>{active.title}</strong> · 正在实时活动中显示</p>
       <p className="section-description">结束于 {new Date(active.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}，可离开 App 查看倒计时。</p>
@@ -73,5 +79,6 @@ export function LiveActivity({ workspace, scope, visible }: { workspace: Workspa
       <p className="section-description">有灵动岛的 iPhone 显示在岛上，其他机型显示在锁屏。到时后返回 App 结束，或在锁屏移除。</p>
     </form>}
     {error && <p role="alert">{error}</p>}
-  </section>;
+  </section></Modal>}
+  </>;
 }

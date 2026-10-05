@@ -1,4 +1,4 @@
-.live-activity-panel { margin: 16px 32px; padding: 20px; background: var(--surface, #fff); border: 1px solid var(--stroke); border-radius: 16px; }
+.live-activity-panel { margin: 0; padding: 0 24px 24px; background: var(--surface, #fff); border: 0; }
 .live-activity-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .live-activity-heading h2 { margin: 0; font-size: 18px; }
 .live-activity-heading span { color: var(--accent); font-size: 12px; }
@@ -8,4 +8,5 @@
 .live-activity-panel input { width: 100%; min-width: 0; min-height: 44px; padding: 10px; border: 1px solid var(--stroke); border-radius: 8px; }
 .live-activity-panel button { min-height: 44px; }
 .live-activity-panel .primary-button { justify-self: start; padding: 10px 18px; }
-@media (max-width: 700px) { .live-activity-panel { margin: 12px 16px; padding: 16px; } }
+ .live-activity-trigger { display: inline-flex; align-items: center; gap: 6px; }
+@media (max-width: 700px) { .live-activity-panel { margin: 0; padding: 0 20px 24px; } }

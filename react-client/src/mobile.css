@@ -71,3 +71,11 @@
   .calendar-range-list .calendar-range-day, .calendar-range-timeline .calendar-range-day { min-height: 0; padding: 16px 0; border-width: 0 0 1px; }
   .calendar-range-event .task-body { padding: 12px 8px; font-size: 14px; }
 }
+
+@media (max-width: 700px), (max-width: 1000px) and (max-height: 500px) and (pointer: coarse) {
+  .today-grid > .schedule-panel,
+  .today-grid .mini-calendar,
+  .today-custom-grid > .today-module-timeline,
+  .today-custom-grid > .today-module-calendar { display: none; }
+  .today-grid .bottom-grid { grid-template-columns: minmax(0, 1fr); }
+}

@@ -441,6 +441,7 @@ export default function App() {
             <div className="header-actions">
               {page==='tasks'&&<button className="context-action" onClick={()=>navigate('attachments')}>附件管理</button>}
               {page==='attachments'&&<button className="context-action" onClick={()=>navigate('tasks')}>返回任务</button>}
+              <LiveActivity workspace={data} scope={renderedScope} visible={page==='today'}/>
               {page==='today'&&<button className="context-action" onClick={()=>setTool('today')}><SlidersHorizontalIcon size={18}/><span>定制今天</span></button>}
               {page==='calendar'&&<AppleCalendarSync data={data} onSave={commit} scope={renderedScope}/>}
               {page==='calendar'&&<button className="context-action" onClick={()=>setTool('courses')}><GraduationCapIcon size={19}/><span>课程导入</span></button>}
@@ -466,7 +467,6 @@ export default function App() {
             </div>
           )}
           {query && <GlobalSearch data={data} query={query} onEdit={setEditing} onProject={id=>{setProject(id);setPage('tasks');setQuery('');}} onNode={id=>{setWorkflowFocus({projectId:workflowNodes(data).find(node=>node.id===id)?.projectId??null,nodeId:id});setPage('workflow');setQuery('');}}/>}
-          <LiveActivity workspace={data} scope={renderedScope} visible={page==='today'}/>
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={`${page}-${project ?? ''}`}
@@ -544,7 +544,7 @@ export default function App() {
                   </div>
                 </div>
               )}
-              {page==='today'&&!defaultToday&&todayModuleOrder(data).filter(key=>!todayHiddenModules(data).has(key)).map(key=><div className="today-module" key={key}>{todayModule(key)}</div>)}
+              {page==='today'&&!defaultToday&&todayModuleOrder(data).filter(key=>!todayHiddenModules(data).has(key)).map(key=><div className={`today-module today-module-${key}`} key={key}>{todayModule(key)}</div>)}
               {page === 'tasks' && (
                 <Tasks
                   data={data}
