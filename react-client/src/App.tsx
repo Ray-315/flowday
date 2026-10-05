@@ -567,7 +567,11 @@ export default function App() {
               </div>}
               {page==='projects'&&<section className="workspace-page"><Projects data={data} onSave={commit} onEdit={setEditing}/></section>}
               {page==='settings'&&<SettingsPage data={data} onSave={commit} onImport={restore} rawBackup={()=>workspaceStorage.raw(scopeRef.current)} scope={scopeRef.current} section={settingsSection} onSection={setSettingsSection} cloudSync={sync?<CloudSync sync={sync} workspace={data} onSave={commit} onSignIn={()=>{void switchSession(null).then(()=>setAuthOpen(true));}}/>:signIn} cloudBackups={service('备份')} apple={service('Apple 日历')} feishu={service('飞书')} account={session?account:<button className="settings-action" onClick={()=>setAuthOpen(true)}>登录账号<ChevronRight size={18}/></button>} onToday={()=>setTool('today')} onCourses={()=>setTool('courses')} onDone={()=>navigate('today')}/>}
-              {page==='services'&&<section className="workspace-page">{service('AI')}</section>}
+              {page==='services'&&(session && sync ? <section className="workspace-page">{service('AI')}</section> : <section className="ai-signin" aria-label="登录以使用 AI 助手">
+                <div className="ai-signin-heading"><SparkleIcon size={23} weight="duotone" aria-hidden="true"/><h2>把想法变成计划</h2></div>
+                <p>描述你的安排，让 AI 帮你整理任务、规划日程。</p>
+                <div className="ai-signin-action"><button className="primary-button" onClick={()=>setAuthOpen(true)}>登录账号</button><span>登录后即可使用 AI 助手</span></div>
+              </section>)}
               {page==='attachments'&&<section className="workspace-page">{service('附件')}</section>}
             </motion.div>
           </AnimatePresence>

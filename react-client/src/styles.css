@@ -2014,3 +2014,17 @@ h1 {
 .calendar-transfer-conflict p { color: var(--secondary); font-size: 12px; overflow-wrap: anywhere; }
 .calendar-transfer-conflict button[aria-pressed='true'] { color: var(--accent); background: var(--accent-soft); }
 @media (max-width: 420px) { .calendar-transfer-dates { grid-template-columns: 1fr; } }
+
+.ai-signin { padding: 30px 28px; background: var(--surface); border: 1px solid var(--stroke); border-radius: 16px; max-width: 640px; }
+.ai-signin-heading { display: flex; align-items: center; gap: 10px; }
+.ai-signin-heading svg { color: var(--accent); flex-shrink: 0; }
+.ai-signin-heading h2 { font-size: 19px; font-weight: 600; letter-spacing: -.02em; margin: 0; }
+.ai-signin > p { color: var(--secondary); font-size: 14px; line-height: 1.8; margin: 12px 0 24px; }
+.ai-signin-action { display: flex; align-items: center; gap: 16px; }
+.ai-signin-action button { min-height: 42px; padding: 0 22px; }
+.ai-signin-action span { color: var(--secondary); font-size: 12px; }
+@media (max-width: 600px) {
+  .ai-signin { padding: 24px 20px; }
+  .ai-signin-heading h2 { font-size: 18px; }
+  .ai-signin-action { align-items: flex-start; flex-direction: column; gap: 12px; }
+}
