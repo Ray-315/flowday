@@ -1,7 +1,8 @@
 import { AppleCalendarSync } from './AppleCalendarSync';
+import { LazyPanel } from './LazyPanel';
 import { LiveActivity } from './LiveActivity';
 import { endActivityForOtherScope } from './liveActivityBridge';
-import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { lazy, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { SunIcon } from '@phosphor-icons/react/dist/csr/Sun';
 import { CalendarBlankIcon } from '@phosphor-icons/react/dist/csr/CalendarBlank';
@@ -319,7 +320,7 @@ export default function App() {
   const openSettings = (section: SettingsSection) => {setSettingsSection(section);navigate('settings');};
   const account = <Account api={api} session={session} onSession={async (next,remember)=>{await switchSession(next,true,remember);setAuthOpen(false);openSettings('account');}} sync={sync} workspace={data} onSave={commit} onContinueLocal={()=>setAuthOpen(false)}/>;
   const signIn = <button className="settings-action" onClick={()=>setAuthOpen(true)}>登录账号以使用此功能<ChevronRight size={18}/></button>;
-  const service = (section: ServiceSection) => session && sync ? <Services key={section} section={section} api={api} session={session} sync={sync} workspace={data} onExport={exportFile} initialText={captureText}/> : signIn;
+  const service = (section: ServiceSection) => session && sync ? <LazyPanel key={section}><Services section={section} api={api} session={session} sync={sync} workspace={data} onExport={exportFile} initialText={captureText}/></LazyPanel> : signIn;
   const enter = {
     initial: { opacity: 0, y: reduced ? 0 : 12 },
     animate: { opacity: 1, y: 0 },
@@ -335,7 +336,6 @@ export default function App() {
       reducedMotion={reduced ? 'always' : 'user'}
       transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
     >
-      <Suspense fallback={null}>
       {authOpen && !session ? <div className="auth-screen">{account}</div> : <>
       <div className="app-shell">
         <aside className="sidebar">
@@ -557,8 +557,8 @@ export default function App() {
                   full
                 />
               )}
-              {page==='workflow'&&<Workflow data={data} onSave={commit} onEdit={setEditing} onProject={id=>setWorkflowFocus({projectId:id,nodeId:null})} {...workflowFocus}/>}
-              {page==='reports'&&<Reports data={data} day={day} onEdit={setEditing}/>}
+              {page==='workflow'&&<LazyPanel><Workflow data={data} onSave={commit} onEdit={setEditing} onProject={id=>setWorkflowFocus({projectId:id,nodeId:null})} {...workflowFocus}/></LazyPanel>}
+              {page==='reports'&&<LazyPanel><Reports data={data} day={day} onEdit={setEditing}/></LazyPanel>}
               {page==='notices'&&<section className="workspace-page"><nav className="service-tabs" aria-label="通知选项">{['通知记录','提醒管理'].map(label=><button key={label} aria-current={noticeTab===label?'page':undefined} onClick={()=>setNoticeTab(label)}>{label}</button>)}</nav>{noticeTab==='提醒管理'?service('提醒'):<Notices data={data} onSave={commit} onEdit={setEditing} receiptKey={workspaceStorage.key(scopeRef.current)+'.reminder-receipts'}/>}</section>}
               {page==='more'&&<div className="mobile-more">
                 <p className="section-description">规划、回顾和管理，都在这里。</p>
@@ -591,10 +591,9 @@ export default function App() {
           />
         )}
       </AnimatePresence>
-      {tool==='courses'&&<CourseImport data={data} onSave={commit} onClose={()=>setTool(null)}/>}
+      {tool==='courses'&&<LazyPanel><CourseImport data={data} onSave={commit} onClose={()=>setTool(null)}/></LazyPanel>}
       {tool==='today'&&<TodayCustomization data={data} onSave={commit} onClose={()=>setTool(null)}/>}
       </>}
-      </Suspense>
     </MotionConfig>
   );
 }
