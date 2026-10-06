@@ -364,7 +364,7 @@ export function Editor({
     else setError('删除失败');
   }
   return (
-    <Modal title={`${item?.id ? '编辑' : '新建'}${title}`} onClose={onClose}>
+    <Modal className="record-editor-dialog" title={`${item?.id ? '编辑' : '新建'}${title}`} onClose={onClose}>
       <form
         onSubmit={(event) => {
           event.preventDefault();

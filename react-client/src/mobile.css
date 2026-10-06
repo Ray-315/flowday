@@ -79,3 +79,11 @@
   .today-custom-grid > .today-module-calendar { display: none; }
   .today-grid .bottom-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+@media (max-width: 700px), (max-width: 1000px) and (max-height: 500px) and (pointer: coarse) {
+  .record-editor-dialog[open] { display: flex; flex-direction: column; overflow: hidden; }
+  .record-editor-dialog > .dialog-header { flex-shrink: 0; }
+  .record-editor-dialog > form { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+  .record-editor-dialog .editor-fields { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  .record-editor-dialog .dialog-footer { flex-shrink: 0; background: var(--surface); }
+}
