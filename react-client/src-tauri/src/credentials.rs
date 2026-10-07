@@ -34,34 +34,45 @@ mod platform {
         if unsafe { CredDeleteW(name.as_ptr(), CRED_TYPE_GENERIC, 0) } == 0 && unsafe { GetLastError() } != ERROR_NOT_FOUND { Err("无法删除系统凭据".into()) } else { Ok(()) }
     }
 }
+#[cfg(any(target_os = "macos", target_os = "ios"))]
+mod local_session;
 #[tauri::command]
-pub fn credential_read(key: String) -> Result<Option<String>, String> {
+pub fn credential_read(app: tauri::AppHandle, key: String) -> Result<Option<String>, String> {
     if std::env::var_os("FLOWDAY_TEST_DATA_DIR").is_some() { return Ok(None); }
-    #[cfg(windows)] { platform::read(&key) }
-    #[cfg(not(windows))] { let _ = key; Ok(None) }
+    #[cfg(windows)] { let _ = app; platform::read(&key) }
+    #[cfg(any(target_os = "macos", target_os = "ios"))] { local_session::read(&local_session::directory(&app)?, &key) }
+    #[cfg(not(any(windows, target_os = "macos", target_os = "ios")))] { let _ = (app,key); Ok(None) }
 }
 #[tauri::command]
-pub fn credential_write(key: String, value: String) -> Result<(), String> {
+pub fn credential_write(app: tauri::AppHandle, key: String, value: String) -> Result<(), String> {
     if std::env::var_os("FLOWDAY_TEST_DATA_DIR").is_some() { return Ok(()); }
-    #[cfg(windows)] { platform::write(&key, &value) }
-    #[cfg(not(windows))] { let _ = (key,value); Err("当前平台尚未配置安全凭据存储".into()) }
+    #[cfg(windows)] { let _ = app; platform::write(&key, &value) }
+    #[cfg(any(target_os = "macos", target_os = "ios"))] { local_session::write(&local_session::directory(&app)?, &key, &value) }
+    #[cfg(not(any(windows, target_os = "macos", target_os = "ios")))] { let _ = (app,key,value); Err("当前平台尚未配置安全凭据存储".into()) }
 }
 #[tauri::command]
-pub fn credential_delete(key: String) -> Result<(), String> {
+pub fn credential_delete(app: tauri::AppHandle, key: String) -> Result<(), String> {
     if std::env::var_os("FLOWDAY_TEST_DATA_DIR").is_some() { return Ok(()); }
-    #[cfg(windows)] { platform::delete(&key) }
-    #[cfg(not(windows))] { let _ = key; Ok(()) }
+    #[cfg(windows)] { let _ = app; platform::delete(&key) }
+    #[cfg(any(target_os = "macos", target_os = "ios"))] { local_session::delete(&local_session::directory(&app)?, &key) }
+    #[cfg(not(any(windows, target_os = "macos", target_os = "ios")))] { let _ = (app,key); Ok(()) }
 }
 
-#[cfg(all(test,windows))]
+#[cfg(all(test, windows))]
 mod tests {
     #[test]
     fn system_credential_round_trip_is_isolated_and_removed() {
         let key=format!("test-{}-{}",std::process::id(),std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
         super::platform::write(&key,"temporary-test-value").unwrap();
+        struct Cleanup(String);
+        impl Drop for Cleanup { fn drop(&mut self) { let _ = super::platform::delete(&self.0); } }
+        let _cleanup = Cleanup(key.clone());
+        assert_eq!(super::platform::read(&key).unwrap().as_deref(), Some("temporary-test-value"));
+        super::platform::write(&key,"updated-test-value").unwrap();
         let value=super::platform::read(&key);
         super::platform::delete(&key).unwrap();
-        assert_eq!(value.unwrap().as_deref(),Some("temporary-test-value"));
+        assert_eq!(value.unwrap().as_deref(),Some("updated-test-value"));
         assert!(super::platform::read(&key).unwrap().is_none());
+        super::platform::delete(&key).unwrap();
     }
 }

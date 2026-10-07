@@ -93,16 +93,18 @@ test('major features have visible navigation and full pages on desktop and narro
   await seed(page);
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 960 });
-    for (const name of ['报告', '通知', '智能安排与服务', '项目管理', '设置', '本地备份']) {
-      const entry = page.getByRole('button', { name, exact: true });
+    for (const name of ['报告', '通知', 'AI 助手', '项目管理', '设置', '同步与备份']) {
+      if (width === 390 && name !== 'AI 助手') await page.getByRole('button', {name:'更多',exact:true}).click();
+      const entry = page.getByRole('button', { name:width===390&&name==='通知'?'通知与提醒':name, exact: true });
       await expect(entry).toBeVisible();
       await entry.click();
-      await expect(page.locator('.page-header h1')).toContainText(name==='本地备份'?'设置':name);
+      await expect(page.locator('.page-header h1')).toContainText(name==='同步与备份'?'设置':name);
       await expect(page.getByRole('dialog')).toHaveCount(0);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     }
     await expect(page.getByRole('button', {name:'偏好设置',exact:true})).toHaveCount(0);
-    await page.getByRole('button', {name:'账号与同步',exact:true}).first().click();
+    if(width===390){await page.getByRole('button', {name:'更多',exact:true}).click();await page.getByRole('button',{name:'登录账号',exact:true}).click();}
+    else await page.getByRole('button', {name:'账号与安全',exact:true}).first().click();
     await expect(page.getByRole('heading', {name:'欢迎回来',exact:true})).toBeVisible();
     await expect(page.locator('.sidebar')).toHaveCount(0);
     await page.getByRole('button', {name:'继续本地使用',exact:true}).click();
@@ -130,7 +132,7 @@ test('Today module order and visibility persist, and captures convert exactly on
   await expect(page.locator('.today-module').nth(1).getByRole('heading', { name: '任务' })).toBeVisible();
   await page.getByLabel('快速输入', { exact: true }).fill('浏览器记录转任务');
   await page.getByRole('button', { name: '保存快速输入', exact: true }).click();
-  await expect(page.getByRole('heading', { name: '智能安排与服务.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'AI 助手.' })).toBeVisible();
   await page.getByRole('button', { name: '今天', exact: true }).first().click();
   await page.locator('.today-captures summary').click();
   await page.getByRole('button', { name: '转为任务', exact: true }).click();
@@ -149,8 +151,10 @@ test('advanced task fields survive persistence and batch archive/trash/restore',
   const dialog = page.getByRole('dialog', { name: '编辑任务' });
   await dialog.locator('summary').filter({ hasText: '更多设置' }).click();
   await dialog.getByLabel('描述', { exact: true }).fill('保留高级字段');
-  await dialog.getByLabel(/^状态/).selectOption('doing');
-  await dialog.getByLabel(/^难度/).selectOption('high');
+  await dialog.getByRole('combobox', { name: /^状态/ }).click();
+  await page.getByRole('option', { name: '进行中', exact: true }).click();
+  await dialog.getByRole('combobox', { name: /^难度/ }).click();
+  await page.getByRole('option', { name: '高', exact: true }).click();
   await dialog.getByLabel('预计耗时（分钟）', { exact: true }).fill('90');
   await dialog.getByLabel('实际耗时（分钟）', { exact: true }).fill('35');
   await dialog.getByLabel('计划开始', { exact: true }).fill('2050-10-05T09:00');
@@ -285,11 +289,13 @@ test('workflow task-node creation and condition branch selection survive reload'
   await page.locator('.workflow-toolbar').getByRole('button', { name: '节点', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('节点名称', { exact: true }).fill('浏览器新增节点');
-  await dialog.getByLabel('节点类型', { exact: true }).selectOption('task');
+  await dialog.getByRole('combobox', { name: '节点类型', exact: true }).click();
+  await page.getByRole('option', { name: '任务', exact: true }).click();
   await dialog.getByRole('button', { name: '保存', exact: true }).click();
   await expect(page.locator('.workflow-node').filter({ hasText: '浏览器新增节点' })).toBeVisible();
   await page.getByRole('button', { name: '分支判断', exact: true }).click();
-  await page.getByLabel('条件出口', { exact: true }).selectOption('yes');
+  await page.getByRole('combobox', { name: '条件出口', exact: true }).click();
+  await page.getByRole('option', { name: '通过', exact: true }).click();
   await page.reload();
   const saved = await persisted(page);
   expect(saved.nodes.find((node: { id: string }) => node.id === 'condition')).toMatchObject({
@@ -361,12 +367,14 @@ test('calendar display preferences persist and Sunday-first mobile week stays wi
   await seed(page, data);
   await page.getByRole('button', { name: '日历', exact: true }).click();
   const calendar = page.locator('.calendar-full');
-  await calendar.getByLabel('重叠样式').selectOption('层叠');
+  await calendar.getByRole('combobox', { name: '重叠样式' }).click();
+  await page.getByRole('option', { name: '层叠', exact: true }).click();
   const stacked = await calendar
     .locator('.event-block')
     .evaluateAll((blocks) => blocks.map((block) => (block as HTMLElement).style.left));
   expect(stacked[0]).not.toBe(stacked[1]);
-  await calendar.getByLabel('重叠样式').selectOption('聚合');
+  await calendar.getByRole('combobox', { name: '重叠样式' }).click();
+  await page.getByRole('option', { name: '聚合', exact: true }).click();
   await expect(calendar.locator('.event-block')).toHaveCount(1);
   await calendar.getByRole('button', { name: '查看 2 个重叠日程' }).click();
   await expect(

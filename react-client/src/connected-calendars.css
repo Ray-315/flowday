@@ -1,0 +1,18 @@
+.connected-calendars { max-width: 680px; }
+.connected-calendars > .section-description { line-height: 1.7; margin: 0 0 20px; }
+.connected-calendar-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; margin: 20px 0; }
+.connected-calendar-actions > span, .connected-calendar-row small { color: var(--muted); font-size: 13px; }
+.connected-calendar-list { display: grid; }
+.connected-calendar-row { display: flex; align-items: center; gap: 14px; padding: 16px 0; border-bottom: 1px solid var(--stroke); cursor: pointer; }
+.connected-calendar-row input { width: 20px; height: 20px; flex-shrink: 0; accent-color: var(--accent); }
+.connected-calendar-row > span { display: grid; gap: 5px; min-width: 0; overflow-wrap: anywhere; }
+.connected-calendar-row strong { font-size: 15px; font-weight: 600; }
+.calendar-secondary { margin-top: 24px; border-top: 1px solid var(--stroke); padding-top: 18px; }
+.calendar-secondary > summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+.calendar-secondary[open] > summary { margin-bottom: 16px; }
+.calendar-source-label { font-size: 11px; color: var(--muted); margin-left: 8px; font-weight: 400; }
+
+.calendar-secondary > summary { list-style: none; display: flex; align-items: center; gap: 10px; }
+.calendar-secondary > summary::-webkit-details-marker { display: none; }
+.calendar-secondary > summary::before { content: ''; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); flex-shrink: 0; }
+.calendar-secondary[open] > summary::before { transform: rotate(45deg); }

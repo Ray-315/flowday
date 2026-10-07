@@ -1,3 +1,4 @@
+import { Select } from './Select';
 import { useEffect, useState } from 'react';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { parseWorkspace, type Workspace } from './workspace';
@@ -18,10 +19,10 @@ export function Preferences({data,onSave,section='general'}:{data:Workspace;onSa
   const zone=String(data.preferences.timezone??'system');
   const zones=['system','Asia/Shanghai','Asia/Tokyo','Europe/London','Europe/Berlin','America/New_York','America/Los_Angeles','UTC'];
   const names:Record<string,string>={low:'低',normal:'普通',high:'高',urgent:'紧急'};
-  function choice(label:string,key:string,fallback:string|number,options:readonly (string|number)[]){return <label className="field settings-row" key={key}><span>{label}</span><select value={String(data.preferences[key]??fallback)} onChange={event=>update(key,typeof fallback==='number'?Number(event.target.value):event.target.value)}>{options.map(value=><option key={value} value={value}>{key==='defaultDifficulty'?({low:'简单',normal:'中等',high:'困难'} as Record<string,string>)[value]:names[value]??value}</option>)}</select></label>;}
+  function choice(label:string,key:string,fallback:string|number,options:readonly (string|number)[]){return <label className="field settings-row" key={key}><span>{label}</span><Select value={String(data.preferences[key]??fallback)} onChange={event=>update(key,typeof fallback==='number'?Number(event.target.value):event.target.value)}>{options.map(value=><option key={value} value={value}>{key==='defaultDifficulty'?({low:'简单',normal:'中等',high:'困难'} as Record<string,string>)[value]:names[value]??value}</option>)}</Select></label>;}
   return <div className="settings-fields">
     {section==='general'&&<>
-    <label className="field"><span>时区</span><select value={zone} onChange={event=>update('timezone',event.target.value)}>{[...new Set([...zones,zone])].map(value=><option key={value} value={value}>{value==='system'?'系统时区':value}</option>)}</select></label>
+    <label className="field"><span>时区</span><Select value={zone} onChange={event=>update('timezone',event.target.value)}>{[...new Set([...zones,zone])].map(value=><option key={value} value={value}>{value==='system'?'系统时区':value}</option>)}</Select></label>
     </>}
     {section==='schedule'&&<>
     {choice('默认视图','calendarView','月',['月','周','日','时间轴','列表'])}

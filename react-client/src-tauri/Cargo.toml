@@ -12,6 +12,8 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+tauri-plugin-apple-calendar = { path = "plugins/apple-calendar" }
+tauri-plugin-live-activity = { path = "plugins/live-activity" }
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"

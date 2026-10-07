@@ -1,3 +1,4 @@
+import { Select } from './Select';
 import { useEffect, useRef, useState, type PointerEvent, type KeyboardEvent } from 'react';
 import { Plus, Copy, ClipboardPaste, Undo2, Redo2, Trash2, Network, CalendarPlus, X } from './icons';
 import type { Editing } from './App';
@@ -265,7 +266,7 @@ export function Workflow({
     if (
       draft ||
       edgeDraft ||
-      (e.target as HTMLElement).closest('input,textarea,select,[contenteditable="true"]')
+      (e.target as HTMLElement).closest('input,textarea,select,[role=combobox],[role=listbox],[contenteditable="true"]')
     )
       return;
     const key = e.key.toLowerCase(),
@@ -344,13 +345,13 @@ export function Workflow({
   return (
     <section className="workflow-page" aria-label="工作流" onKeyDown={shortcuts}>
       <div className="workflow-toolbar">
-        <select aria-label="工作流项目" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+        <Select aria-label="工作流项目" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
           {projects.map((p) => (
             <option key={p.id} value={p.id}>
               {p.title}
             </option>
           ))}
-        </select>
+        </Select>
         <button className="secondary-button" onClick={() => create()} disabled={!projectId}>
           <Plus size={16} />
           节点
@@ -578,7 +579,7 @@ export function Workflow({
             </button>
             <label>
               状态
-              <select
+              <Select
                 aria-label="节点状态"
                 value={selected.status}
                 onChange={(e) => apply(() => setNodeStatus(data, selected.id, e.target.value as NodeStatus))}
@@ -588,12 +589,12 @@ export function Workflow({
                     {title}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             {selected.kind === 'condition' && (
               <label>
                 条件出口
-                <select
+                <Select
                   aria-label="条件出口"
                   value={selected.selectedBranchEdgeId ?? ''}
                   onChange={(e) =>
@@ -608,7 +609,7 @@ export function Workflow({
                         {e.label || nodes.find((n) => n.id === e.targetId)?.title}
                       </option>
                     ))}
-                </select>
+                </Select>
               </label>
             )}
             {selected.kind === 'group' && (
@@ -739,7 +740,7 @@ export function Workflow({
                   </label>
                   <label>
                     类型
-                    <select
+                    <Select
                       aria-label="节点类型"
                       value={draft.kind}
                       onChange={(e) =>
@@ -756,7 +757,7 @@ export function Workflow({
                           {title}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </label>
                   <label>
                     描述
@@ -767,17 +768,17 @@ export function Workflow({
                   </label>
                   <label>
                     前置条件
-                    <select
+                    <Select
                       value={draft.anyPredecessor ? 'or' : 'and'}
                       onChange={(e) => setDraft({ ...draft, anyPredecessor: e.target.value === 'or' })}
                     >
                       <option value="and">AND</option>
                       <option value="or">OR</option>
-                    </select>
+                    </Select>
                   </label>
                   <label>
                     分组
-                    <select
+                    <Select
                       value={draft.groupId ?? ''}
                       onChange={(e) => setDraft({ ...draft, groupId: e.target.value || null })}
                     >
@@ -789,12 +790,12 @@ export function Workflow({
                             {n.title}
                           </option>
                         ))}
-                    </select>
+                    </Select>
                   </label>
                   {draft.kind === 'task' && (
                     <label>
                       关联任务
-                      <select
+                      <Select
                         value={draft.taskId ?? ''}
                         onChange={(e) => setDraft({ ...draft, taskId: e.target.value || null })}
                       >
@@ -808,13 +809,13 @@ export function Workflow({
                               {t.title}
                             </option>
                           ))}
-                      </select>
+                      </Select>
                     </label>
                   )}
                   {draft.kind === 'link' && (
                     <label>
                       目标项目
-                      <select
+                      <Select
                         value={draft.targetProjectId ?? ''}
                         onChange={(e) => setDraft({ ...draft, targetProjectId: e.target.value || null })}
                       >
@@ -824,7 +825,7 @@ export function Workflow({
                             {p.title}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </label>
                   )}
                 </>

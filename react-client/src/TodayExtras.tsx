@@ -76,16 +76,13 @@ export function QuickCapture({
   data,
   onSave,
   onParse,
-  onEdit,
 }: {
   data: Workspace;
   onSave: (data: Workspace) => boolean;
   onParse?: (text: string) => void;
-  onEdit?: (editing: Editing) => void;
 }) {
   const [text, setText] = useState('');
   const [error, setError] = useState('');
-  const pending = capturesFor(data).filter((capture) => !capture.processed);
   function submit() {
     if (!text.trim()) return;
     try {
@@ -109,7 +106,7 @@ export function QuickCapture({
       >
         <input
           aria-label="快速输入"
-          placeholder="快速输入…"
+          placeholder="快速记录任务、日程或灵感…"
           value={text}
           onChange={(event) => setText(event.target.value)}
         />
@@ -117,36 +114,6 @@ export function QuickCapture({
           <Send size={17} />
         </button>
       </form>
-      {!!pending.length && (
-        <details className="today-captures">
-          <summary>记录（{pending.length}）</summary>
-          {pending.map((capture) => (
-            <div className="today-extra-row" key={capture.id}>
-              <span>{capture.text}</span>
-              {onParse && (
-                <button className="secondary-button" onClick={() => onParse(capture.text)}>
-                  分析
-                </button>
-              )}
-              <button
-                className="secondary-button"
-                onClick={() => {
-                  try {
-                    const next = captureToTask(data, capture.id);
-                    if (!onSave(next)) throw new Error('保存失败');
-                    setError('');
-                    onEdit?.({ kind: 'task', item: next.tasks[next.tasks.length - 1] });
-                  } catch (failure) {
-                    setError(failure instanceof Error ? failure.message : '保存失败');
-                  }
-                }}
-              >
-                转为任务
-              </button>
-            </div>
-          ))}
-        </details>
-      )}
       {error && (
         <p className="form-error" role="alert">
           {error}

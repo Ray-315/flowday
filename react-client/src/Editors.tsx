@@ -1,3 +1,5 @@
+import type { AppleCalendar } from './appleCalendar';
+import { Select } from './Select';
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { motion } from 'motion/react';
 import { isTauri } from '@tauri-apps/api/core';
@@ -25,7 +27,7 @@ import {
 const colors = [0xff4b70e8, 0xff9878d0, 0xff309b87, 0xffc17c56, 0xffb39447, 0xffc96679];
 type Attachment = { id: string; title: string; kind: 'url' | 'markdown' | 'file'; content: string };
 
-function Modal({
+export function Modal({
   title,
   onClose,
   children,
@@ -89,6 +91,8 @@ export function Editor({
   data,
   day,
   defaultProject,
+  appleCalendars = [],
+  onCreateAppleEvent,
   onSave,
   onClose,
 }: {
@@ -96,9 +100,15 @@ export function Editor({
   data: Workspace;
   day: string;
   defaultProject: string | null;
+  appleCalendars?: AppleCalendar[];
+  onCreateAppleEvent?: (calendar: AppleCalendar, event: CalendarEvent) => Promise<void>;
   onSave: (data: Workspace) => boolean;
   onClose: () => void;
 }) {
+  const [destination, setDestination] = useState('');
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const creationId = useRef(crypto.randomUUID());
   const zone = zoneFor(data);
   const dateTimeInput = (iso: string) => inputInZone(iso, zone);
   const instant = (wall: string) => instantInZone(wall, zone);
@@ -173,10 +183,20 @@ export function Editor({
   const [subtaskTitle, setSubtaskTitle] = useState('');
   const change = (key: string, value: unknown) => setAdvanced((previous) => ({ ...previous, [key]: value }));
   const fields = (keys: string[]) => Object.fromEntries(keys.map((key) => [key, advanced[key]]));
-  function save() {
+  async function save() {
+    if (savingRef.current) return;
     setError('');
     try {
       if (!name.trim()) throw new Error(`请输入${title}名称`);
+      if (kind === 'event' && !item && destination) {
+        const calendar = appleCalendars.find(value => value.id === destination && value.writable);
+        if (!calendar || !onCreateAppleEvent) throw new Error('所选日历已不可用，请重新选择。');
+        const first = instant(start), last = instant(end);
+        if (!Number.isFinite(Date.parse(first)) || !Number.isFinite(Date.parse(last)) || Date.parse(last) <= Date.parse(first)) throw new Error('请输入有效的日程起止时间。');
+        savingRef.current = true; setSaving(true);
+        await onCreateAppleEvent(calendar, { id: creationId.current, title: name.trim(), start: first, end: last, allDay, location, notes: String(advanced.notes ?? ''), color });
+        onClose(); return;
+      }
       const repeatRule = frequency
         ? { frequency, interval, count: count ? Number(count) : null, until: until ? instant(until) : null }
         : null;
@@ -353,7 +373,7 @@ export function Editor({
       else setError('保存失败，请检查可用存储空间。');
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : '保存失败');
-    }
+    } finally { savingRef.current = false; setSaving(false); }
   }
   function remove() {
     if (!item?.id) return;
@@ -363,22 +383,23 @@ export function Editor({
     else setError('删除失败');
   }
   return (
-    <Modal title={`${item?.id ? '编辑' : '新建'}${title}`} onClose={onClose}>
+    <Modal className="record-editor-dialog" title={`${item?.id ? '编辑' : '新建'}${title}`} onClose={() => { if (!savingRef.current) onClose(); }}>
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          save();
+          void save();
         }}
       >
-        <div className="editor-fields">
+        <div className="editor-fields" inert={saving}>
+          {kind === 'event' && !item && appleCalendars.some(calendar => calendar.writable) && <label className="field"><span>保存到</span><Select value={destination} onChange={event => setDestination(event.target.value)}><option value="">FlowDay</option>{appleCalendars.filter(calendar => calendar.writable).map(calendar => <option key={calendar.id} value={calendar.id}>{calendar.title} · {calendar.account}</option>)}</Select></label>}
           <label className="field">
             <span>{title}名称</span>
             <input required maxLength={300} value={name} onChange={(event) => setName(event.target.value)} />
           </label>
-          {kind !== 'project' && (
+          {!destination && kind !== 'project' && (
             <label className="field">
               <span>项目</span>
-              <select value={projectId} onChange={(event) => setProjectId(event.target.value)}>
+              <Select value={projectId} onChange={(event) => setProjectId(event.target.value)}>
                 <option value="">无项目</option>
                 {data.projects
                   .filter((project) => !project.archived && !project.deletedAt)
@@ -387,7 +408,7 @@ export function Editor({
                       {project.title}
                     </option>
                   ))}
-              </select>
+              </Select>
             </label>
           )}
           {kind === 'task' && (
@@ -464,7 +485,7 @@ export function Editor({
               </label>
             </>
           )}
-          {kind !== 'task' && (
+          {!destination && kind !== 'task' && (
             <div className="field">
               <span>颜色</span>
               <div className="color-choices">
@@ -484,7 +505,7 @@ export function Editor({
               </div>
             </div>
           )}
-          <details className="editor-advanced">
+          {destination ? <label className="field"><span>备注</span><textarea value={String(advanced.notes ?? '')} onChange={event => change('notes', event.target.value)}/></label> : <details className="editor-advanced">
             <summary>更多设置</summary>
             <label className="field">
               <span>{kind === 'event' ? '备注' : '描述'}</span>
@@ -514,7 +535,7 @@ export function Editor({
               <>
                 <label className="field">
                   <span>父级{title}</span>
-                  <select
+                  <Select
                     value={String(advanced.parentId ?? '')}
                     onChange={(event) => change('parentId', event.target.value || null)}
                   >
@@ -526,7 +547,7 @@ export function Editor({
                           {value.title}
                         </option>
                       ))}
-                  </select>
+                  </Select>
                 </label>
                 <label className="toggle-field">
                   <span>归档</span>
@@ -554,7 +575,7 @@ export function Editor({
                 <div className="field-pair">
                   <label className="field">
                     <span>状态</span>
-                    <select
+                    <Select
                       value={String(advanced.status)}
                       onChange={(event) => change('status', event.target.value)}
                     >
@@ -569,11 +590,11 @@ export function Editor({
                           {label}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </label>
                   <label className="field">
                     <span>难度</span>
-                    <select
+                    <Select
                       value={String(advanced.difficulty)}
                       onChange={(event) => change('difficulty', event.target.value)}
                     >
@@ -586,7 +607,7 @@ export function Editor({
                           {label}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </label>
                 </div>
                 <label className="field">
@@ -677,7 +698,7 @@ export function Editor({
                   <>
                     <label className="field">
                       <span>关联任务</span>
-                      <select
+                      <Select
                         value={String(advanced.taskId ?? '')}
                         onChange={(event) => change('taskId', event.target.value || null)}
                       >
@@ -689,7 +710,7 @@ export function Editor({
                               {task.title}
                             </option>
                           ))}
-                      </select>
+                      </Select>
                     </label>
                     {['completed', 'locked'].map((key) => (
                       <label className="toggle-field" key={key}>
@@ -706,7 +727,7 @@ export function Editor({
                 )}
                 <label className="field">
                   <span>重复</span>
-                  <select value={frequency} onChange={(event) => setFrequency(event.target.value)}>
+                  <Select value={frequency} onChange={(event) => setFrequency(event.target.value)}>
                     {[
                       ['', '不重复'],
                       ['daily', '每天'],
@@ -718,7 +739,7 @@ export function Editor({
                         {label}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
                 {frequency && (
                   <>
@@ -755,15 +776,15 @@ export function Editor({
                 {!!item?.seriesId && (
                   <label className="field">
                     <span>修改范围</span>
-                    <select value={scope} onChange={(event) => setScope(event.target.value)}>
+                    <Select value={scope} onChange={(event) => setScope(event.target.value)}>
                       <option value="thisOnly">仅本次</option>
                       <option value="thisAndFuture">本次及以后</option>
-                    </select>
+                    </Select>
                   </label>
                 )}
                 <label className="field">
                   <span>强提醒</span>
-                  <select
+                  <Select
                     value={advanced.strongReminder == null ? '' : String(advanced.strongReminder)}
                     onChange={(event) =>
                       change(
@@ -775,7 +796,7 @@ export function Editor({
                     <option value="">继承默认</option>
                     <option value="true">开启</option>
                     <option value="false">关闭</option>
-                  </select>
+                  </Select>
                 </label>
                 {[
                   'reminderInterval',
@@ -809,7 +830,7 @@ export function Editor({
                   <>
                     <label className="field">
                       <span>提醒规则</span>
-                      <select
+                      <Select
                         value={
                           Array.isArray(advanced.reminderRules)
                             ? advanced.reminderRules.length === 0
@@ -831,14 +852,14 @@ export function Editor({
                         <option value="default">默认规则</option>
                         <option value="off">关闭</option>
                         <option value="custom">自定义</option>
-                      </select>
+                      </Select>
                     </label>
                     {Array.isArray(advanced.reminderRules) &&
                       advanced.reminderRules.map((rule: Record<string, unknown>, index: number) => (
                         <div className="field-pair" key={index}>
                           <label className="field">
                             <span>提醒 {index + 1}</span>
-                            <select
+                            <Select
                               value={rule.dueAt ? 'absolute' : 'relative'}
                               onChange={(event) =>
                                 change(
@@ -855,7 +876,7 @@ export function Editor({
                             >
                               <option value="relative">提前分钟</option>
                               <option value="absolute">指定时间</option>
-                            </select>
+                            </Select>
                           </label>
                           <label className="field">
                             <span>{rule.dueAt ? '时间' : '分钟'}</span>
@@ -914,7 +935,7 @@ export function Editor({
                 )}
               </>
             )}
-          </details>
+          </details>}
           <details className="editor-advanced">
             <summary>附件</summary>
             {attachments.map((attachment) => (
@@ -947,14 +968,14 @@ export function Editor({
             ))}
             <label className="field">
               <span>类型</span>
-              <select
+              <Select
                 value={attachmentKind}
                 onChange={(event) => setAttachmentKind(event.target.value as Attachment['kind'])}
               >
                 <option value="url">链接</option>
                 <option value="markdown">Markdown</option>
                 <option value="file">文件</option>
-              </select>
+              </Select>
             </label>
             {attachmentKind === 'file' ? (
               <input
@@ -1080,11 +1101,11 @@ export function Editor({
             </button>
           )}
           <div />
-          <button className="secondary-button" type="button" onClick={onClose}>
+          <button className="secondary-button" type="button" disabled={saving} onClick={onClose}>
             取消
           </button>
-          <button className="primary-button" type="submit">
-            保存
+          <button className="primary-button" type="submit" disabled={saving}>
+            {saving ? '正在保存…' : destination ? '保存到苹果日历' : '保存'}
           </button>
         </div>
       </form>

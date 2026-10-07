@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { ApiException, FlowApi, object, rows, textField, type AuthSession, type SyncController } from './api';
 import './services.css';
 import type { Workspace } from './workspace';
+import { loginPreferences } from './storage';
 import { ToolsDialog } from './Tools';
 import { EnvelopeIcon } from '@phosphor-icons/react/dist/csr/Envelope';
 import { LockSimpleIcon } from '@phosphor-icons/react/dist/csr/LockSimple';
@@ -12,13 +13,14 @@ import { EyeSlashIcon } from '@phosphor-icons/react/dist/csr/EyeSlash';
 export type AccountProps = {
   api: FlowApi;
   session: AuthSession | null;
-  onSession: (session: AuthSession | null) => Promise<void>;
+  onSession: (session: AuthSession | null, remember?: boolean) => Promise<void>;
   sync: SyncController | null;
   workspace?: Workspace;
   onSave?: (next: Workspace) => boolean;
   onContinueLocal?: () => void;
 };
-export function Account({ api, session, onSession, sync, workspace, onSave, onContinueLocal }: AccountProps) {
+export function Account({ api, session, onSession, sync, onContinueLocal }: AccountProps) {
+  const [remember, setRemember] = useState(loginPreferences.read);
   const [register, setRegister] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -60,7 +62,7 @@ export function Account({ api, session, onSession, sync, workspace, onSave, onCo
       await operation();
     } catch (failure) {
       const messages:Record<string,string>={INVALID_CREDENTIALS:'邮箱或密码不正确',UNAUTHORIZED:'登录已过期，请重新登录',RATE_LIMITED:'操作过于频繁，请稍后重试',EMAIL_EXISTS:'此邮箱已注册',INVALID_REGISTRATION_CODE:'验证码无效或已过期，请重新获取',MAIL_NOT_CONFIGURED:'注册邮件服务尚未配置',CODE_COOLDOWN:'请稍后再获取验证码',CODE_SEND_LIMIT:'验证码发送次数过多，请稍后重试',MAIL_DELIVERY_FAILED:'验证码发送失败，请稍后重试'};
-      setError(failure instanceof ApiException ? messages[failure.code] ?? failure.message : failure instanceof Error ? failure.message : '操作失败');
+      setError(failure instanceof ApiException ? messages[failure.code] ?? failure.message : failure instanceof Error ? failure.message : typeof failure === 'string' ? failure : '操作失败');
     } finally {
       setBusy(false);
     }
@@ -73,7 +75,12 @@ export function Account({ api, session, onSession, sync, workspace, onSave, onCo
         : await api.login(email.trim(), password);
       setPassword('');
       setCode('');
-      await onSession(next);
+      try {
+        await onSession(next, remember);
+      } catch (failure) {
+        const detail = failure instanceof Error ? failure.message : typeof failure === 'string' ? failure : '无法初始化本机登录状态';
+        throw new Error(`${register ? '账号已创建' : '账号验证成功'}，但未能完成本机登录：${detail}`);
+      }
     });
   }
   if (!session) return <div className="auth-layout">
@@ -92,6 +99,8 @@ export function Account({ api, session, onSession, sync, workspace, onSave, onCo
           if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())){setError('请输入有效的邮箱地址');return;}
           setSending(true);void run(async()=>{try{const response=await api.sendRegistrationCode(email.trim());setRetryAt(Date.now()+Number(response.retryAfterSeconds??60)*1000);setCode('');}finally{setSending(false);}});
         }}>{sending?'发送中':retryAt>Date.now()?`${Math.ceil((retryAt-Date.now())/1000)} 秒后重发`:'发送验证码'}</button></div>}
+        <label className="auth-remember"><input type="checkbox" checked={remember} disabled={busy} onChange={event=>setRemember(event.target.checked)}/><span>自动登录</span></label>
+        <p className="auth-session-note">{remember?'在本机保存登录令牌，下次启动自动登录。':'仅本次登录，关闭应用后需要重新登录。'}</p>
         {error&&<p className="form-error" role="alert">{error}</p>}
         <button className="primary-button auth-submit" disabled={busy}>{busy&&!sending?'正在提交':register?'注册':'登录'}</button>
         {onContinueLocal&&<button className="auth-local" type="button" disabled={busy} onClick={onContinueLocal}>继续本地使用</button>}
@@ -203,59 +212,6 @@ export function Account({ api, session, onSession, sync, workspace, onSave, onCo
               {item.current ? '当前设备' : '其他设备'} · {String(item.expiresAt)}
             </p>
           ))}
-          {sync && (
-            <>
-              <h3>跨设备同步</h3>
-              {workspace && onSave && (
-                <label className="service-choice">
-                  <input
-                    type="checkbox"
-                    checked={workspace.preferences.autoSync === true}
-                    onChange={(event) =>
-                      onSave({
-                        ...workspace,
-                        preferences: { ...workspace.preferences, autoSync: event.target.checked },
-                      })
-                    }
-                  />
-                  自动同步
-                </label>
-              )}
-              <div className="service-actions">
-                <button disabled={busy || sync.busy} onClick={() => void sync.sync()}>
-                  立即同步
-                </button>
-                {sync.lastSync && <span>{sync.lastSync.toLocaleString()}</span>}
-              </div>
-              {sync.conflict && (
-                <div className="service-actions">
-                  <button
-                    disabled={sync.busy}
-                    onClick={() => {
-                      if (window.confirm('先备份本地修改，再使用服务器数据？')) void sync.resolveUseServer();
-                    }}
-                  >
-                    使用服务器数据
-                  </button>
-                  <button
-                    disabled={sync.busy}
-                    onClick={() => {
-                      if (window.confirm('先备份，再用本地数据替换当前服务器版本？'))
-                        void sync.resolveUploadLocal();
-                    }}
-                  >
-                    上传本地数据
-                  </button>
-                </div>
-              )}
-              {sync.error && <p role="alert">{sync.error}</p>}
-              {sync.unauthorized && (
-                <button disabled={busy} onClick={() => void run(() => onSession(null))}>
-                  重新登录
-                </button>
-              )}
-            </>
-          )}
           <div className="service-actions">
             <button
               disabled={busy}

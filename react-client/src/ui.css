@@ -7,20 +7,20 @@
 :root[data-theme='dark'] { --danger:#ef939a; }
 .field, .service-panel label { font-size:14px; gap:8px; }
 .field > span { font-size:12px; color:var(--secondary); }
-.field input, .field select, .field textarea,
-.service-panel input:not([type='checkbox']), .service-panel select, .service-panel textarea {
+.field input, .field :is(select, .select-trigger), .field textarea,
+.service-panel input:not([type='checkbox']), .service-panel :is(select, .select-trigger), .service-panel textarea {
   width:100%; min-width:0; min-height:var(--control-height); padding:10px 12px;
   border:1px solid transparent; border-radius:var(--control-radius);
   background:var(--input); color:var(--ink); font:inherit; font-size:14px; line-height:1.5;
 }
-.field input:focus, .field select:focus, .field textarea:focus,
-.service-panel input:focus, .service-panel select:focus, .service-panel textarea:focus { border-color:var(--accent); }
+.field input:focus, .field :is(select, .select-trigger):focus, .field textarea:focus,
+.service-panel input:focus, .service-panel :is(select, .select-trigger):focus, .service-panel textarea:focus { border-color:var(--accent); }
 .field textarea, .service-panel textarea { min-height:100px; resize:vertical; }
-.primary-button, .secondary-button, .service-panel button:not(.settings-action):not(.icon-button) {
+.primary-button, .secondary-button, .service-panel button:not(.settings-action):not(.icon-button):not(.select-trigger) {
   min-height:var(--control-height); padding:10px 18px; border:0; border-radius:var(--control-radius);
   font-size:13px; font-weight:500; line-height:1.5;
 }
-.secondary-button, .service-panel button:not(.primary-button):not(.settings-action):not(.icon-button) { background:var(--input); color:var(--secondary); }
+.secondary-button, .service-panel button:not(.primary-button):not(.settings-action):not(.icon-button):not(.select-trigger) { background:var(--input); color:var(--secondary); }
 .primary-button, .service-panel button.primary-button { background:var(--accent); color:#fff; }
 :root[data-theme='dark'] .primary-button, :root[data-theme='dark'] .service-panel button.primary-button { color:var(--bg); }
 button:disabled { opacity:.45; cursor:default; }
@@ -42,7 +42,7 @@ button:disabled { opacity:.45; cursor:default; }
 .settings-fields { display:grid; gap:0; }
 .settings-fields > .field, .settings-row { display:flex; flex-direction:row; align-items:center; justify-content:space-between; gap:24px; min-height:70px; padding:12px 0; border-bottom:1px solid var(--stroke); }
 .settings-fields > .field > span { font-size:14px; color:var(--ink); }
-.settings-fields > .field > input, .settings-fields > .field > select { width:200px; flex-shrink:0; }
+.settings-fields > .field > input, .settings-fields > .field > :is(select, .select-trigger) { width:200px; flex-shrink:0; }
 .settings-action { display:flex; align-items:center; justify-content:space-between; gap:24px; width:100%; padding:18px 0; text-align:left; font-size:14px; border-bottom:1px solid var(--stroke); }
 .settings-action:hover { color:var(--accent); }
 .settings-action > span { font-size:22px; color:var(--secondary); }
@@ -88,8 +88,25 @@ button:disabled { opacity:.45; cursor:default; }
 }
 @media(max-width:600px) {
   .settings-fields > .field { flex-direction:column; align-items:stretch; gap:10px; padding:16px 0; }
-  .settings-fields > .field > input, .settings-fields > .field > select { width:100%; }
+  .settings-fields > .field > input, .settings-fields > .field > :is(select, .select-trigger) { width:100%; }
   .settings-content { padding:22px 20px; }
   .service-preview { grid-template-columns:minmax(0,1fr); }
   .account-summary { flex-wrap:wrap; }
 }
+
+/* Group service controls by purpose, with a quiet secondary navigation. */
+.service-tabs button { padding: 9px 14px; color: var(--secondary); background: var(--input); }
+.service-tabs button[aria-current='page'] { background: var(--accent-soft); color: var(--accent); }
+.section-description { color: var(--secondary); font-size: 14px; line-height: 1.7; margin: 0 0 24px; }
+.service-disclosure { border-top: 1px solid var(--stroke); border-bottom: 1px solid var(--stroke); margin: 32px 0; padding: 18px 0; }
+.service-disclosure summary { cursor: pointer; font-size: 15px; font-weight: 500; }
+.service-disclosure summary span { font-size: 13px; font-weight: 400; color: var(--secondary); margin-left: 16px; }
+.service-panel[aria-label='AI 助手'] > form > button { justify-self: start; min-width: 128px; }
+.service-panel[aria-label='AI 助手'] textarea { min-height: 144px; }
+@media (max-width: 640px) {
+  .service-disclosure summary span { display: block; margin: 8px 0 0 20px; }
+}
+
+.auth-remember { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--secondary); cursor: pointer; }
+.auth-remember input { width: 16px; height: 16px; accent-color: var(--accent); }
+.auth-session-note { margin: -12px 0 0; color: var(--secondary); font-size: 12px; line-height: 1.6; }

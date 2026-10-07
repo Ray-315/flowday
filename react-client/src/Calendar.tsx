@@ -1,3 +1,4 @@
+import { Select } from './Select';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronLeft, ChevronRight, MapPin, Plus } from './icons';
@@ -72,7 +73,7 @@ export function Calendar({
       .filter((event) => Date.parse(event.start) < bounds.end && Date.parse(event.end) > bounds.start)
       .sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
   };
-  const [view, setView] = useState(() => (full ? viewFor(data.preferences.calendarView) : 'day'));
+  const [view, setView] = useState(() => (full ? (typeof matchMedia === 'function' && matchMedia('(max-width: 700px)').matches && !data.preferences.calendarView ? 'list' : viewFor(data.preferences.calendarView)) : 'day'));
   const overlap =
     overlapOverride ??
     (full && ['并排', '层叠', '聚合'].includes(String(data.preferences.overlapStyle))
@@ -106,7 +107,7 @@ export function Calendar({
     setError('');
   }
   useEffect(() => {
-    setView(full ? viewFor(data.preferences.calendarView) : 'day');
+    setView(full ? (typeof matchMedia === 'function' && matchMedia('(max-width: 700px)').matches && !data.preferences.calendarView ? 'list' : viewFor(data.preferences.calendarView)) : 'day');
   }, [data.preferences.calendarView, full]);
   function drop(event: React.DragEvent, date: string, hour = 9, minute = 0) {
     event.preventDefault();
@@ -292,7 +293,7 @@ export function Calendar({
               {label}
             </button>
           ))}
-          <select
+          <Select
             aria-label="重叠样式"
             value={overlap}
             disabled={!onSave}
@@ -303,7 +304,7 @@ export function Calendar({
             {['并排', '层叠', '聚合'].map((value) => (
               <option key={value}>{value}</option>
             ))}
-          </select>
+          </Select>
         </div>
       )}
       {error && (
@@ -313,6 +314,7 @@ export function Calendar({
       )}
       {full && view !== 'day' ? (
         <div className={`calendar-range calendar-range-${view}`}>
+          {['list','timeline'].includes(view) && !activeEvents(data).some(item=>item.title.toLowerCase().includes(query.toLowerCase())&&Date.parse(item.start)<dayBounds(shiftDay(rangeStart,rangeDays),zone).start&&Date.parse(item.end)>dayBounds(rangeStart,zone).start) && <div className="calendar-empty"><h3>接下来还没有日程</h3><p>留出一点空间，安排重要的事。</p><button className="secondary-button" onClick={()=>onEdit({kind:'event'})}>添加日程</button></div>}
           {Array.from({ length: rangeDays }, (_, index) => {
             const date = shiftDay(rangeStart, index);
             const items = eventsForDay(data, date).filter(
@@ -367,15 +369,15 @@ export function Calendar({
                         onClick={() => onEdit({ kind: 'event', item })}
                         style={{ borderLeft: `3px solid ${hexColor(item.color)}` }}
                       >
-                        {item.allDay ? '全天' : time(item.start)} · {item.title}
+                        {item.allDay ? '全天' : time(item.start)} · {item.title}{typeof item.appleCalendarTitle === 'string' && <span className="calendar-source-label">{item.appleCalendarTitle}</span>}
                       </button>
-                      {onSave && (
-                        <input
-                          type="checkbox"
-                          aria-label={`完成日程：${item.title}`}
-                          checked={item.completed === true}
-                          onChange={() => persist(setEventCompleted(data, item.id, !item.completed))}
-                        />
+                      {onSave && !item.appleCalendarTitle && (
+                        <label className="task-checkbox calendar-event-checkbox">
+                          <input type="checkbox" aria-label={`完成日程：${item.title}`}
+                            checked={item.completed === true}
+                            onChange={() => persist(setEventCompleted(data, item.id, !item.completed))}/>
+                          <span><svg viewBox="0 0 16 16" aria-hidden="true"><motion.path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" initial={false} animate={{ pathLength: item.completed ? 1 : 0, opacity: item.completed ? 1 : 0 }} transition={{ duration: .18 }}/></svg></span>
+                        </label>
                       )}
                     </div>
                   ))
@@ -413,7 +415,7 @@ export function Calendar({
                     onDragStart={(event) => event.dataTransfer.setData('application/flowday-event', item.id)}
                     style={{ '--event-color': hexColor(item.color) } as CSSProperties}
                   >
-                    {item.title}
+                    {item.title}{typeof item.appleCalendarTitle === 'string' && <span className="calendar-source-label">{item.appleCalendarTitle}</span>}
                   </button>
                 ))}
             </div>
@@ -511,6 +513,7 @@ export function Calendar({
                           </span>
                         )}
                         <strong>{grouped ? `${group.length} 个日程` : event.title}</strong>
+                        {!grouped && height > 65 && typeof event.appleCalendarTitle === 'string' && <span className="event-time">{event.appleCalendarTitle}</span>}
                         {onSave && !grouped && !event.locked && !event.completed && (
                           <span
                             className="event-resize"

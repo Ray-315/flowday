@@ -73,6 +73,14 @@ export async function initializeStorage() {
   try { initialWorkspace = await workspaceStorage.load('guest'); }
   catch { initialStorageError = '无法读取本地数据，请先导出原始数据或从备份恢复。'; }
 }
+// Only this preference is stored in WebView storage, never the session token.
+export const loginPreferences = {
+  read: () => {
+    try { return localStorage.getItem('flowday.remember-login.v1') !== 'false'; }
+    catch { return false; }
+  },
+  write: (remember: boolean) => localStorage.setItem('flowday.remember-login.v1', String(remember)),
+};
 export const credentialVault = {
   read: (key: string) => isTauri() ? invoke<string | null>('credential_read', { key }) : Promise.resolve(null),
   write: (key: string, value: string) => isTauri() ? invoke<void>('credential_write', { key, value }) : Promise.resolve(),

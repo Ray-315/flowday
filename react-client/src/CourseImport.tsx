@@ -1,3 +1,4 @@
+import { Select } from './Select';
 import { useState } from 'react';
 import {
   parseCourses,
@@ -103,7 +104,7 @@ export function CourseImport({
           ].map(([key, label]) => (
             <label className="field" key={key}>
               <span>{label}</span>
-              <select
+              <Select
                 value={mapping[key] ?? ''}
                 onChange={(event) => {
                   setMapping({ ...mapping, [key]: event.target.value });
@@ -116,7 +117,7 @@ export function CourseImport({
                     {header}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
           ))}
         </details>
@@ -141,11 +142,11 @@ export function CourseImport({
           {!!conflicts.length && (
             <label className="field">
               <span>冲突处理（{conflicts.length} 项）</span>
-              <select value={choice} onChange={(event) => setChoice(event.target.value as CourseChoice)}>
+              <Select value={choice} onChange={(event) => setChoice(event.target.value as CourseChoice)}>
                 <option value="keep">保留全部</option>
                 <option value="skip">跳过冲突课程</option>
                 <option value="replace">替换现有冲突日程</option>
-              </select>
+              </Select>
             </label>
           )}
           <div className="course-preview">

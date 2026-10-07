@@ -64,7 +64,7 @@ body {
 }
 button,
 input,
-select {
+:is(select, .select-trigger) {
   font: inherit;
 }
 button {
@@ -76,12 +76,12 @@ button {
 }
 button,
 input,
-select {
+:is(select, .select-trigger) {
   outline-offset: 4px;
 }
 button:focus-visible,
 input:focus-visible,
-select:focus-visible {
+:is(select, .select-trigger):focus-visible {
   outline: 2px solid var(--accent);
 }
 button {
@@ -95,7 +95,7 @@ button:active:not(.event-block) {
   transform: translateY(1px);
 }
 input,
-select {
+:is(select, .select-trigger) {
   min-width: 0;
   color: var(--ink);
 }
@@ -1094,7 +1094,7 @@ h1 {
   font-size: 11px;
 }
 .field input,
-.field select {
+.field :is(select, .select-trigger) {
   height: 42px;
   border: 1px solid var(--stroke);
   background: var(--input);
@@ -1104,7 +1104,7 @@ h1 {
   transition: border-color 0.16s;
 }
 .field input:focus,
-.field select:focus {
+.field :is(select, .select-trigger):focus {
   border-color: var(--accent);
 }
 .field input[type='datetime-local'] {
@@ -1901,7 +1901,7 @@ h1 {
 }
 :root[data-theme='dark'] .search,
 :root[data-theme='dark'] .field input,
-:root[data-theme='dark'] .field select,
+:root[data-theme='dark'] .field :is(select, .select-trigger),
 :root[data-theme='dark'] .secondary-button {
   border-color: transparent;
 }
@@ -1909,7 +1909,7 @@ h1 {
   background: var(--surface);
 }
 :root[data-theme='dark'] .field input:focus,
-:root[data-theme='dark'] .field select:focus {
+:root[data-theme='dark'] .field :is(select, .select-trigger):focus {
   border-color: var(--accent);
 }
 @media (max-width: 700px) {
@@ -1981,4 +1981,50 @@ h1 {
   animation-delay: 0ms !important;
   transition-duration: 0.01ms !important;
   scroll-behavior: auto !important;
+}
+
+.calendar-transfer-dialog { width: min(460px, calc(100vw - 32px)); }
+.calendar-transfer-dialog .dialog-header { padding: 22px 24px 12px; }
+.calendar-transfer-dialog .dialog-header h2 { font-size: 17px; }
+.calendar-transfer { display: grid; gap: 20px; padding: 0 24px 22px; }
+.calendar-transfer-tabs { display: flex; gap: 24px; border-bottom: 1px solid var(--stroke); }
+.calendar-transfer-tabs button { position: relative; padding: 12px 2px; min-height: 44px; border: 0; border-radius: 0; background: transparent; color: var(--secondary); font-size: 14px; }
+.calendar-transfer-tabs button[aria-pressed='true'] { color: var(--accent); font-weight: 600; }
+.calendar-transfer-tabs button[aria-pressed='true']::after { content: ''; position: absolute; height: 2px; bottom: -1px; left: 0; right: 0; background: var(--accent); border-radius: 2px; }
+.calendar-transfer-caption { margin: -3px 0 0; color: var(--secondary); font-size: 13px; line-height: 1.6; }
+.calendar-transfer form, .calendar-transfer label { display: grid; gap: 9px; }
+.calendar-transfer form { gap: 22px; }
+.calendar-transfer label { color: var(--ink); font-size: 13px; font-weight: 500; }
+.calendar-transfer-connect { padding: 8px 0 0; }
+.calendar-transfer-connect p { color: var(--secondary); margin: 0 0 20px; font-size: 13px; }
+.calendar-transfer-connect .primary-button { display: block; margin-left: auto; min-height: 40px; }
+.calendar-transfer-options { color: var(--secondary); font-size: 12px; }
+.calendar-transfer-options summary { cursor: pointer; font-size: 13px; padding: 4px 0; }
+.calendar-transfer-options p { line-height: 1.7; margin-bottom: 0; font-size: 12px; }
+.calendar-transfer-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0 8px; }
+.calendar-transfer-dates input { min-width: 0; width: 100%; }
+.calendar-transfer-refresh { color: var(--accent); background: transparent; border: 0; padding: 8px 0; font-size: 12px; }
+.calendar-transfer-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 18px; border-top: 1px solid var(--stroke); }
+.calendar-transfer-footer > span { color: var(--secondary); font-size: 11px; }
+.calendar-transfer-submit { min-height: 40px; padding: 0 20px; width: auto; }
+.calendar-transfer-result { color: var(--accent); font-size: 13px; line-height: 1.6; margin: 0; }
+.calendar-transfer-error { color: var(--ink); font-size: 13px; line-height: 1.6; margin: 0; }
+.calendar-transfer-conflict { border-top: 1px solid var(--stroke); padding-top: 14px; }
+.calendar-transfer-conflict h3 { margin: 0 0 8px; font-size: 14px; }
+.calendar-transfer-conflict p { color: var(--secondary); font-size: 12px; overflow-wrap: anywhere; }
+.calendar-transfer-conflict button[aria-pressed='true'] { color: var(--accent); background: var(--accent-soft); }
+@media (max-width: 420px) { .calendar-transfer-dates { grid-template-columns: 1fr; } }
+
+.ai-signin { padding: 30px 28px; background: var(--surface); border: 1px solid var(--stroke); border-radius: 16px; max-width: 640px; }
+.ai-signin-heading { display: flex; align-items: center; gap: 10px; }
+.ai-signin-heading svg { color: var(--accent); flex-shrink: 0; }
+.ai-signin-heading h2 { font-size: 19px; font-weight: 600; letter-spacing: -.02em; margin: 0; }
+.ai-signin > p { color: var(--secondary); font-size: 14px; line-height: 1.8; margin: 12px 0 24px; }
+.ai-signin-action { display: flex; align-items: center; gap: 16px; }
+.ai-signin-action button { min-height: 42px; padding: 0 22px; }
+.ai-signin-action span { color: var(--secondary); font-size: 12px; }
+@media (max-width: 600px) {
+  .ai-signin { padding: 24px 20px; }
+  .ai-signin-heading h2 { font-size: 18px; }
+  .ai-signin-action { align-items: flex-start; flex-direction: column; gap: 12px; }
 }

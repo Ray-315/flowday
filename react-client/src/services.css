@@ -43,3 +43,46 @@
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+
+/* Selection feedback stays local to AI preview actions. */
+.service-panel .ai-preview-choice {
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 1px solid var(--stroke);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.service-panel .ai-preview-choice:has(input:checked) {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+.service-panel .ai-preview-choice:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.service-panel .ai-preview-choice input[type='checkbox'] {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  margin: 0 4px 0 0;
+  accent-color: var(--accent);
+  cursor: inherit;
+}
+.service-panel .ai-preview-choice:has(input:disabled) {
+  cursor: wait;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .service-panel .ai-preview-choice {
+    transition: transform 140ms cubic-bezier(0.25, 1, 0.5, 1);
+  }
+  .service-panel .ai-preview-choice:not(:has(input:disabled)):active {
+    transform: scale(0.992);
+  }
+  .service-panel .ai-preview-choice input:checked {
+    animation: ai-selection-check 180ms cubic-bezier(0.25, 1, 0.5, 1);
+  }
+}
+@keyframes ai-selection-check {
+  from { transform: scale(0.75); opacity: 0.45; }
+  to { transform: scale(1); opacity: 1; }
+}

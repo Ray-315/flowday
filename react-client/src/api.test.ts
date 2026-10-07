@@ -24,6 +24,18 @@ describe('API transport', () => {
     ])
       expect(() => normalizeEndpoint(url)).toThrow();
   });
+  it('allows AI preview to finish beyond the ordinary client deadline', async () => {
+    vi.useFakeTimers();
+    try {
+      const api = new FlowApi('http://localhost', async () => {
+        await new Promise(resolve => setTimeout(resolve, 25000));
+        return ok({ previewId: 'ready' });
+      });
+      const pending = api.feature(session.token, 'POST', '/ai/preview', { text: '明天开会', timezone: 'Asia/Shanghai' });
+      await vi.advanceTimersByTimeAsync(25000);
+      await expect(pending).resolves.toMatchObject({ previewId: 'ready' });
+    } finally { vi.useRealTimers(); }
+  });
   it('passes CAS and token only through transport and preserves conflict version', async () => {
     const send = vi.fn<ApiTransport>(async () => ({
       status: 409,

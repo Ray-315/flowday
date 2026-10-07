@@ -130,7 +130,8 @@ fn request_url(base: &str, path: &str) -> Result<reqwest::Url, String> {
 #[tauri::command]
 pub async fn http_request(base_url: String, path: String, method: String, token: Option<String>, body: Option<String>) -> Result<HttpResult, String> {
     let url = request_url(&base_url, &path)?;
-    let client = reqwest::Client::builder().timeout(Duration::from_secs(18)).redirect(reqwest::redirect::Policy::none()).build().map_err(|_| "无法初始化网络连接")?;
+    let timeout = if path == "/ai/preview" { 40 } else { 18 };
+    let client = reqwest::Client::builder().timeout(Duration::from_secs(timeout)).redirect(reqwest::redirect::Policy::none()).build().map_err(|_| "无法初始化网络连接")?;
     let method = reqwest::Method::from_bytes(method.as_bytes()).map_err(|_| "请求方式无效")?;
     let mut request = client.request(method, url).header("Accept", "application/json");
     if let Some(token) = token { request = request.bearer_auth(token); }

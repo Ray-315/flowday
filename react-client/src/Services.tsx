@@ -1,6 +1,8 @@
+import { Select } from './Select';
 import { useEffect, useState } from 'react';
 import {
   FlowApi,
+  ApiException,
   object,
   rows,
   textField,
@@ -13,7 +15,19 @@ import type { Workspace } from './workspace';
 import './services.css';
 import { instantInZone, zoneFor } from './timezone';
 
+export type ServiceSection = 'AI' | '提醒' | '备份' | '附件' | 'Apple 日历' | '飞书';
+const serviceNames: Record<ServiceSection, string> = { AI: 'AI 助手', 提醒: '提醒管理', 备份: '云备份', 附件: '附件管理', 'Apple 日历': 'iCloud 日历', 飞书: '飞书通知' };
+const serviceDescriptions: Record<ServiceSection, string> = {
+  AI: '把想法变成任务与日程。先预览结果，再由你确认应用。',
+  提醒: '集中管理提醒时间、重复频率和完成状态。',
+  备份: '在 FlowDay 服务器保存工作区快照，需要时恢复到此前的版本。',
+  附件: '管理任务与日程相关的文件、链接和笔记。',
+  'Apple 日历': '连接 iCloud 日历，双向同步日程；不包含任务和整个工作区。',
+  飞书: '将提醒发送到你的飞书机器人。',
+};
+
 export type ServicesProps = {
+  section?: ServiceSection;
   api: FlowApi;
   session: AuthSession;
   sync: SyncController;
@@ -62,12 +76,13 @@ function parsePreview(result: JsonObject): Preview {
     expiresAt: textField(result.expiresAt),
   };
 }
-export function Services({ api, session, sync, workspace, onExport, initialText = '' }: ServicesProps) {
+export function Services({ api, session, sync, workspace, onExport, initialText = '', section: tab = 'AI' }: ServicesProps) {
   const zone = zoneFor(workspace);
   const date = (value: unknown) => displayDate(value, zone);
-  const [tab, setTab] = useState('AI');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [appliedMessage, setAppliedMessage] = useState('');
+  const [applying, setApplying] = useState(false);
   const [items, setItems] = useState<JsonObject[]>([]);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [candidate, setCandidate] = useState(0);
@@ -113,7 +128,6 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
   const call = (method: string, path: string, data?: JsonObject) =>
     api.feature(session.token, method, path, data);
   async function load(active = tab) {
-    if (active === 'AI') setItems(rows((await call('GET', '/audit')).records));
     if (active === '提醒') setItems(rows((await call('GET', '/reminders')).reminders));
     if (active === '备份') setItems(rows((await call('GET', '/backups')).backups));
     if (active === '附件') setItems(rows((await call('GET', '/attachments')).attachments));
@@ -124,10 +138,11 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
     if (busy) return;
     setBusy(true);
     setError('');
+    setAppliedMessage('');
     try {
       await operation();
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : '操作失败');
+      setError(failure instanceof ApiException && failure.code === 'AI_NOT_CONFIGURED' ? 'AI 分析尚未配置，请联系服务管理员启用。' : failure instanceof Error ? failure.message : typeof failure === 'string' ? failure : '操作失败');
     } finally {
       setBusy(false);
     }
@@ -184,15 +199,10 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   const actions = preview ? rows(object(preview.candidates[candidate]?.intent).actions) : [];
+  const createsEvents = indexes.length > 0 && indexes.every(index => actions[index]?.type === 'event');
   return (
-    <section className="service-panel" aria-label="云端服务">
-      <nav className="service-tabs" aria-label="服务">
-        {['AI', '提醒', '备份', '附件', 'Apple 日历', '飞书'].map((item) => (
-          <button key={item} aria-selected={tab === item} disabled={busy} onClick={() => setTab(item)}>
-            {item}
-          </button>
-        ))}
-      </nav>
+    <section className="service-panel" aria-label={serviceNames[tab]}>
+      <p className="section-description">{serviceDescriptions[tab]}</p>
       {tab === 'AI' && (
         <>
           <form
@@ -202,11 +212,13 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
             }}
           >
             <label>
-              自然语言
-              <textarea required value={input} onChange={(event) => setInput(event.target.value)} />
+              想安排什么？
+              <textarea placeholder="例如：明天下午三点整理实验结果，预计一小时" required value={input} onChange={(event) => setInput(event.target.value)} />
             </label>
-            <button disabled={busy}>解析预览</button>
+            <button className="primary-button" disabled={busy}>分析并预览</button>
           </form>
+          <details className="service-disclosure">
+            <summary>自动排程<span>选择待办任务，生成时间安排</span></summary>
           <form
             onSubmit={(event) => {
               event.preventDefault();
@@ -296,12 +308,15 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
               </button>
             </div>
           ))}
+          </details>
           {preview && (
             <>
+              <p className="section-description">以下是预览，尚未保存。勾选要执行的内容，再点击下方按钮。</p>
               <div className="service-actions">
                 {preview.candidates.map((item, index) => (
                   <button
                     key={String(item.id)}
+                    disabled={busy}
                     aria-pressed={candidate === index}
                     onClick={() => choose(index)}
                   >
@@ -310,9 +325,11 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
                 ))}
               </div>
               {actions.map((action, index) => (
-                <label className="service-choice" key={index}>
+                <label className="service-choice ai-preview-choice" key={index}>
                   <input
                     type="checkbox"
+                    aria-label={`选择：${label(action.title) || actionNames[String(action.type)]}`}
+                    disabled={busy}
                     checked={indexes.includes(index)}
                     onChange={(event) =>
                       setIndexes(
@@ -322,7 +339,7 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
                       )
                     }
                   />
-                  {actionNames[String(action.type)] ?? String(action.type)} ·{' '}
+                  {action.type === 'event' ? '日程' : actionNames[String(action.type)] ?? String(action.type)} ·{' '}
                   {label(action.title) ||
                     workspace.tasks.find((task) => task.id === action.id)?.title ||
                     workspace.events.find((event) => event.id === action.id)?.title ||
@@ -332,53 +349,35 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
                   {action.deadline ? ` · ${date(action.deadline)}` : ''}
                 </label>
               ))}
+              {indexes.length === 0 && <p role="status">请先勾选至少一项。</p>}
               <button
+                className="primary-button"
                 disabled={busy || indexes.length === 0 || Date.parse(preview.expiresAt) <= Date.now()}
                 onClick={() =>
                   void run(async () => {
-                    await sync.remoteMutation((version) => {
-                      if (version !== preview.baseVersion) throw new Error('预览已过期，请重新生成');
-                      return call('POST', '/ai/apply', {
-                        previewId: preview.previewId,
-                        baseVersion: preview.baseVersion,
-                        candidateId: preview.candidates[candidate].id,
-                        actionIndexes: indexes,
+                    setApplying(true);
+                    try {
+                      await sync.remoteMutation((version) => {
+                        if (version !== preview.baseVersion) throw new Error('预览已过期，请重新生成');
+                        return call('POST', '/ai/apply', {
+                          previewId: preview.previewId,
+                          baseVersion: preview.baseVersion,
+                          candidateId: preview.candidates[candidate].id,
+                          actionIndexes: indexes,
+                        });
                       });
-                    });
-                    setPreview(null);
-                    await load();
+                      setAppliedMessage(createsEvents ? `已创建 ${indexes.length} 个日程，可在日历中查看。` : `已应用 ${indexes.length} 项更改。`);
+                      setPreview(null);
+                    } finally {
+                      setApplying(false);
+                    }
                   })
                 }
               >
-                确认应用
+                {applying ? '正在保存…' : createsEvents ? '创建日程' : '确认应用'}
               </button>
             </>
           )}
-          <h2>操作记录</h2>
-          {items.map((item) => (
-            <div className="service-row" key={String(item.id)}>
-              <p>
-                {String(item.action)} · {date(item.createdAt)}
-              </p>
-              {item.input != null && <p>{String(item.input)}</p>}
-              {item.reversible === true && (
-                <button
-                  disabled={busy}
-                  onClick={() => {
-                    if (window.confirm('撤销这次操作？'))
-                      void run(async () => {
-                        await sync.remoteMutation((baseVersion) =>
-                          call('POST', `/audit/${encodeURIComponent(String(item.id))}/undo`, { baseVersion }),
-                        );
-                        await load();
-                      });
-                  }}
-                >
-                  撤销
-                </button>
-              )}
-            </div>
-          ))}
         </>
       )}
       {tab === '提醒' && (
@@ -415,7 +414,7 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
             </label>
             <label>
               任务
-              <select value={taskId} onChange={(event) => setTaskId(event.target.value)}>
+              <Select value={taskId} onChange={(event) => setTaskId(event.target.value)}>
                 <option value="">无</option>
                 {workspace.tasks
                   .filter((task) => !task.deletedAt)
@@ -424,7 +423,7 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
                       {task.title}
                     </option>
                   ))}
-              </select>
+              </Select>
             </label>
             <label className="service-choice">
               <input type="checkbox" checked={strong} onChange={(event) => setStrong(event.target.checked)} />
@@ -786,7 +785,7 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
           >
             <label>
               所属对象
-              <select
+              <Select
                 required
                 value={attachmentOwner}
                 onChange={(event) => setAttachmentOwner(event.target.value)}
@@ -806,7 +805,7 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
                       {item.title}
                     </option>
                   ))}
-              </select>
+              </Select>
             </label>
             <label>
               名称
@@ -818,11 +817,11 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
             </label>
             <label>
               类型
-              <select value={attachmentKind} onChange={(event) => setAttachmentKind(event.target.value)}>
+              <Select value={attachmentKind} onChange={(event) => setAttachmentKind(event.target.value)}>
                 <option value="url">链接</option>
                 <option value="markdown">Markdown</option>
                 <option value="file">文件</option>
-              </select>
+              </Select>
             </label>
             {attachmentKind === 'file' ? (
               <label>
@@ -945,14 +944,14 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
                 <>
                   <label>
                     日历
-                    <select value={calendarUrl} onChange={(event) => setCalendarUrl(event.target.value)}>
+                    <Select value={calendarUrl} onChange={(event) => setCalendarUrl(event.target.value)}>
                       <option value="">选择日历</option>
                       {calendars.map((item) => (
                         <option value={String(item.url)} key={String(item.url)}>
                           {String(item.displayName)}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </label>
                   <button
                     type="button"
@@ -1110,6 +1109,7 @@ export function Services({ api, session, sync, workspace, onExport, initialText 
           </div>
         </>
       )}
+      {appliedMessage && <p role="status">{appliedMessage}</p>}
       {error && <p role="alert">{error}</p>}
     </section>
   );

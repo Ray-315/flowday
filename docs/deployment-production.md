@@ -33,7 +33,7 @@ https://flowday.mtrx.pro
 | 修改前代理备份 | `/opt/atrium/caddy/Caddyfile.before-flowday-20261002T171114Z`（文件名为 UTC 时间） |
 | 首次部署数据库快照 | 数据卷中 `/app/data/snapshots/deployment-20261003.sqlite` |
 
-服务端加密与提醒动作密钥已生成。AI 模型服务尚未配置；飞书和 Apple 需要各账号在客户端设置中连接。不要把配置文件或密钥贴到聊天、日志或发布包。
+服务端加密与提醒动作密钥已生成。AI 已接入 DeepSeek Flash（`deepseek-flash`）；飞书和 Apple 需要各账号在客户端设置中连接。不要把配置文件或密钥贴到聊天、日志或发布包。
 
 ## 日常检查
 
@@ -67,7 +67,11 @@ curl --fail --max-time 15 https://flowday.mtrx.pro/health
 nano /opt/flowday/shared/flowday.env
 ```
 
-填写 `AI_BASE_URL`（兼容接口地址，通常包含 `/v1`）、`AI_API_KEY`、`AI_MODEL`。保持现有 `INTEGRATION_ENCRYPTION_KEY`、`ACTION_SIGNING_KEY`、端口和数据库配置。
+填写 `AI_BASE_URL`（兼容接口地址，按服务商文档选择是否包含 `/v1`）、`AI_API_KEY`、`AI_MODEL`。
+
+当前生产配置（2026-10-04）：`AI_BASE_URL=https://api.deepseek.com`、`AI_MODEL=deepseek-flash`，对应 DeepSeek V4.1 Flash。API Key 仅保存在服务器私有配置中，不进入源码或客户端。参考 [DeepSeek 官方文档](https://api-docs.deepseek.com/updates/)。
+
+Mac 客户端已通过真实生产接口验证：输入“明天下午三点整理实验结果，预计一小时”，返回 2026-10-05 15:00–16:00 的日程预览；未确认应用，不写入用户日程。另在隔离的内存工作区使用真实 DeepSeek API 验证了任务预览、预览不修改工作区、确认应用及审计撤销，全部通过。保持现有 `INTEGRATION_ENCRYPTION_KEY`、`ACTION_SIGNING_KEY`、端口和数据库配置。
 
 在前述目录定义 `dc` 后应用配置：
 
@@ -148,4 +152,4 @@ sudo docker compose -p flowday -f compose.yaml \
 - 数据库完整性检查为 `ok`，首次部署快照已生成。
 - Caddy 原配置全部字节保留，仅追加 FlowDay 站点；原有容器持续运行。
 
-真实 AI、Apple、飞书与各平台通知交付仍需账号和设备联调，以上部署验证不替代这些验收。
+Apple、飞书与各平台通知交付仍需账号和设备联调，以上部署验证不替代这些验收。

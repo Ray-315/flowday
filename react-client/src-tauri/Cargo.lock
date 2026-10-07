@@ -992,8 +992,10 @@ dependencies = [
  "serde_json",
  "tauri",
  "tauri-build",
+ "tauri-plugin-apple-calendar",
  "tauri-plugin-dialog",
  "tauri-plugin-fs",
+ "tauri-plugin-live-activity",
  "tauri-plugin-notification",
  "windows-sys 0.61.2",
 ]
@@ -3755,6 +3757,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "tauri-plugin-apple-calendar"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "swift-rs",
+ "tauri",
+ "tauri-plugin",
+ "tokio",
+]
+
+[[package]]
 name = "tauri-plugin-dialog"
 version = "2.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3794,6 +3807,15 @@ dependencies = [
  "thiserror 2.0.20",
  "toml 1.1.4+spec-1.1.0",
  "url",
+]
+
+[[package]]
+name = "tauri-plugin-live-activity"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "tauri",
+ "tauri-plugin",
 ]
 
 [[package]]

@@ -14,6 +14,7 @@ beforeEach(() => {
 afterEach(async () => {
   await act(() => root.unmount());
   container.remove();
+  vi.unstubAllGlobals();
 });
 it('drops a task into the selected timezone and links its task/project', async () => {
   const data = emptyWorkspace();
@@ -174,4 +175,14 @@ it('MiniCalendar uses Sunday-first headers and cells when configured', async () 
   expect(container.querySelector('.month-grid:not(.weekdays) button')?.getAttribute('aria-label')).toBe(
     '2026-09-27',
   );
+});
+
+it('starts a new phone calendar in agenda view with an actionable empty state', async () => {
+  vi.stubGlobal('matchMedia', () => ({matches:true}));
+  const edit = vi.fn();
+  await act(async()=>root.render(<Calendar data={emptyWorkspace()} day="2026-10-05" onDay={()=>{}} onEdit={edit} query="" clock={new Date('2026-10-05T12:00Z')} full/>));
+  expect(container.querySelector('.calendar-range-list')).not.toBeNull();
+  const add = [...container.querySelectorAll('button')].find(button=>button.textContent==='添加日程')!;
+  await act(async()=>add.click());
+  expect(edit).toHaveBeenCalledWith({kind:'event'});
 });

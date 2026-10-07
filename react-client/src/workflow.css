@@ -13,15 +13,15 @@
   padding: 14px 20px;
   border-bottom: 1px solid var(--stroke);
 }
-.workflow-toolbar select {
+.workflow-toolbar :is(select, .select-trigger) {
   max-width: 220px;
 }
 .workflow-toolbar input[type='range'] {
   width: 95px;
   margin-left: auto;
 }
-.workflow-toolbar select,
-.workflow-inspector select {
+.workflow-toolbar :is(select, .select-trigger),
+.workflow-inspector :is(select, .select-trigger) {
   padding: 7px 10px;
   background: var(--surface, transparent);
   color: inherit;
@@ -193,7 +193,7 @@
   font-size: 13px;
 }
 .workflow-dialog input,
-.workflow-dialog select,
+.workflow-dialog :is(select, .select-trigger),
 .workflow-dialog textarea {
   color: inherit;
   background: transparent;
