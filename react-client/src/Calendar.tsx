@@ -369,9 +369,9 @@ export function Calendar({
                         onClick={() => onEdit({ kind: 'event', item })}
                         style={{ borderLeft: `3px solid ${hexColor(item.color)}` }}
                       >
-                        {item.allDay ? '全天' : time(item.start)} · {item.title}
+                        {item.allDay ? '全天' : time(item.start)} · {item.title}{typeof item.appleCalendarTitle === 'string' && <span className="calendar-source-label">{item.appleCalendarTitle}</span>}
                       </button>
-                      {onSave && (
+                      {onSave && !item.appleCalendarTitle && (
                         <label className="task-checkbox calendar-event-checkbox">
                           <input type="checkbox" aria-label={`完成日程：${item.title}`}
                             checked={item.completed === true}
@@ -415,7 +415,7 @@ export function Calendar({
                     onDragStart={(event) => event.dataTransfer.setData('application/flowday-event', item.id)}
                     style={{ '--event-color': hexColor(item.color) } as CSSProperties}
                   >
-                    {item.title}
+                    {item.title}{typeof item.appleCalendarTitle === 'string' && <span className="calendar-source-label">{item.appleCalendarTitle}</span>}
                   </button>
                 ))}
             </div>
@@ -513,6 +513,7 @@ export function Calendar({
                           </span>
                         )}
                         <strong>{grouped ? `${group.length} 个日程` : event.title}</strong>
+                        {!grouped && height > 65 && typeof event.appleCalendarTitle === 'string' && <span className="event-time">{event.appleCalendarTitle}</span>}
                         {onSave && !grouped && !event.locked && !event.completed && (
                           <span
                             className="event-resize"

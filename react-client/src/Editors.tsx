@@ -1,3 +1,4 @@
+import type { AppleCalendar } from './appleCalendar';
 import { Select } from './Select';
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { motion } from 'motion/react';
@@ -90,6 +91,8 @@ export function Editor({
   data,
   day,
   defaultProject,
+  appleCalendars = [],
+  onCreateAppleEvent,
   onSave,
   onClose,
 }: {
@@ -97,9 +100,15 @@ export function Editor({
   data: Workspace;
   day: string;
   defaultProject: string | null;
+  appleCalendars?: AppleCalendar[];
+  onCreateAppleEvent?: (calendar: AppleCalendar, event: CalendarEvent) => Promise<void>;
   onSave: (data: Workspace) => boolean;
   onClose: () => void;
 }) {
+  const [destination, setDestination] = useState('');
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const creationId = useRef(crypto.randomUUID());
   const zone = zoneFor(data);
   const dateTimeInput = (iso: string) => inputInZone(iso, zone);
   const instant = (wall: string) => instantInZone(wall, zone);
@@ -174,10 +183,20 @@ export function Editor({
   const [subtaskTitle, setSubtaskTitle] = useState('');
   const change = (key: string, value: unknown) => setAdvanced((previous) => ({ ...previous, [key]: value }));
   const fields = (keys: string[]) => Object.fromEntries(keys.map((key) => [key, advanced[key]]));
-  function save() {
+  async function save() {
+    if (savingRef.current) return;
     setError('');
     try {
       if (!name.trim()) throw new Error(`请输入${title}名称`);
+      if (kind === 'event' && !item && destination) {
+        const calendar = appleCalendars.find(value => value.id === destination && value.writable);
+        if (!calendar || !onCreateAppleEvent) throw new Error('所选日历已不可用，请重新选择。');
+        const first = instant(start), last = instant(end);
+        if (!Number.isFinite(Date.parse(first)) || !Number.isFinite(Date.parse(last)) || Date.parse(last) <= Date.parse(first)) throw new Error('请输入有效的日程起止时间。');
+        savingRef.current = true; setSaving(true);
+        await onCreateAppleEvent(calendar, { id: creationId.current, title: name.trim(), start: first, end: last, allDay, location, notes: String(advanced.notes ?? ''), color });
+        onClose(); return;
+      }
       const repeatRule = frequency
         ? { frequency, interval, count: count ? Number(count) : null, until: until ? instant(until) : null }
         : null;
@@ -354,7 +373,7 @@ export function Editor({
       else setError('保存失败，请检查可用存储空间。');
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : '保存失败');
-    }
+    } finally { savingRef.current = false; setSaving(false); }
   }
   function remove() {
     if (!item?.id) return;
@@ -364,19 +383,20 @@ export function Editor({
     else setError('删除失败');
   }
   return (
-    <Modal className="record-editor-dialog" title={`${item?.id ? '编辑' : '新建'}${title}`} onClose={onClose}>
+    <Modal className="record-editor-dialog" title={`${item?.id ? '编辑' : '新建'}${title}`} onClose={() => { if (!savingRef.current) onClose(); }}>
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          save();
+          void save();
         }}
       >
-        <div className="editor-fields">
+        <div className="editor-fields" inert={saving}>
+          {kind === 'event' && !item && appleCalendars.some(calendar => calendar.writable) && <label className="field"><span>保存到</span><Select value={destination} onChange={event => setDestination(event.target.value)}><option value="">FlowDay</option>{appleCalendars.filter(calendar => calendar.writable).map(calendar => <option key={calendar.id} value={calendar.id}>{calendar.title} · {calendar.account}</option>)}</Select></label>}
           <label className="field">
             <span>{title}名称</span>
             <input required maxLength={300} value={name} onChange={(event) => setName(event.target.value)} />
           </label>
-          {kind !== 'project' && (
+          {!destination && kind !== 'project' && (
             <label className="field">
               <span>项目</span>
               <Select value={projectId} onChange={(event) => setProjectId(event.target.value)}>
@@ -465,7 +485,7 @@ export function Editor({
               </label>
             </>
           )}
-          {kind !== 'task' && (
+          {!destination && kind !== 'task' && (
             <div className="field">
               <span>颜色</span>
               <div className="color-choices">
@@ -485,7 +505,7 @@ export function Editor({
               </div>
             </div>
           )}
-          <details className="editor-advanced">
+          {destination ? <label className="field"><span>备注</span><textarea value={String(advanced.notes ?? '')} onChange={event => change('notes', event.target.value)}/></label> : <details className="editor-advanced">
             <summary>更多设置</summary>
             <label className="field">
               <span>{kind === 'event' ? '备注' : '描述'}</span>
@@ -915,7 +935,7 @@ export function Editor({
                 )}
               </>
             )}
-          </details>
+          </details>}
           <details className="editor-advanced">
             <summary>附件</summary>
             {attachments.map((attachment) => (
@@ -1081,11 +1101,11 @@ export function Editor({
             </button>
           )}
           <div />
-          <button className="secondary-button" type="button" onClick={onClose}>
+          <button className="secondary-button" type="button" disabled={saving} onClick={onClose}>
             取消
           </button>
-          <button className="primary-button" type="submit">
-            保存
+          <button className="primary-button" type="submit" disabled={saving}>
+            {saving ? '正在保存…' : destination ? '保存到苹果日历' : '保存'}
           </button>
         </div>
       </form>

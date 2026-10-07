@@ -19,7 +19,7 @@ export function SettingsPage({data, onSave, onImport, rawBackup, scope, section,
   onToday: () => void; onCourses: () => void; onDone: () => void;
 }) {
   const [cloudTab, setCloudTab] = useState('云同步');
-  const [integrationTab, setIntegrationTab] = useState('iCloud 日历');
+  const [integrationTab, setIntegrationTab] = useState('系统日历');
   return <div className="settings-page">
     <label className="settings-mobile-picker">设置分类<Select value={section} onChange={event=>onSection(event.target.value as SettingsSection)}>{settingsSections.map(([key,label])=><option key={key} value={key}>{label}</option>)}</Select></label>
     <nav className="settings-navigation" aria-label="设置分类">{settingsSections.map(([key, label]) =>
@@ -31,8 +31,8 @@ export function SettingsPage({data, onSave, onImport, rawBackup, scope, section,
         <nav className="service-tabs" aria-label="同步与备份选项">{['云同步', '云备份', '本地备份'].map(label => <button key={label} aria-current={cloudTab === label ? 'page' : undefined} onClick={() => setCloudTab(label)}>{label}</button>)}</nav>
         {cloudTab === '云同步' ? cloudSync : cloudTab === '云备份' ? cloudBackups : <LocalBackups scope={scope} onRestore={onImport}/>}
       </> : section === 'integrations' ? <>
-        <nav className="service-tabs" aria-label="集成选项">{['iCloud 日历', '飞书通知'].map(label => <button key={label} aria-current={integrationTab === label ? 'page' : undefined} onClick={() => setIntegrationTab(label)}>{label}</button>)}</nav>
-        {integrationTab === 'iCloud 日历' ? apple : feishu}
+        <nav className="service-tabs" aria-label="集成选项">{['系统日历', '飞书通知'].map(label => <button key={label} aria-current={integrationTab === label ? 'page' : undefined} onClick={() => setIntegrationTab(label)}>{label}</button>)}</nav>
+        {integrationTab === '系统日历' ? apple : feishu}
       </> : section === 'account' ? account : section === 'appearance' ?
         <Settings data={data} onSave={onSave} onImport={onImport} rawBackup={rawBackup} onClose={onDone} embedded section="appearance"/> :
         section === 'data' ? <>

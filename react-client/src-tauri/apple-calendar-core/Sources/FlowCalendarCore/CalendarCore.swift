@@ -12,7 +12,13 @@ public enum FlowCalendarCore {
         guard let data = raw.data(using: .utf8), let args = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
             finish(["error": "日历参数无效"]); return
         }
-        if args["action"] as? String == "capability" { finish(["supported": true]); return }
+        if args["action"] as? String == "capability" {
+            let status = EKEventStore.authorizationStatus(for: .event)
+            let authorized: Bool
+            if #available(iOS 17, macOS 14, *) { authorized = status == .fullAccess }
+            else { authorized = status == .authorized }
+            finish(["supported": true, "authorized": authorized]); return
+        }
         let permitted: (Bool, Error?) -> Void = { granted, error in
             guard granted else { finish(["error": "未获得日历完整访问权限，请在系统设置 → 隐私与安全 → 日历中允许 FlowDay 后重试"]); return }
             queue.async {

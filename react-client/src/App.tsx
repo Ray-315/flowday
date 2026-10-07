@@ -1,8 +1,9 @@
-import { AppleCalendarSync } from './AppleCalendarSync';
+import { ConnectedCalendars, ConnectedEventEditor } from './ConnectedCalendars';
+import { useAppleCalendars, connectedId, connectedPrefix, type ConnectedEvent } from './useAppleCalendars';
 import { LazyPanel } from './LazyPanel';
 import { LiveActivity } from './LiveActivity';
 import { endActivityForOtherScope } from './liveActivityBridge';
-import { lazy, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { lazy, useMemo, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { SunIcon } from '@phosphor-icons/react/dist/csr/Sun';
 import { CalendarBlankIcon } from '@phosphor-icons/react/dist/csr/CalendarBlank';
@@ -116,6 +117,17 @@ export default function App() {
   const syncRef=useRef<SyncController|null>(null);
   const renderedScope=scopeRef.current;
   const renderedGeneration=scopeGeneration.current;
+  const appleCalendars = useAppleCalendars(renderedScope, day);
+  const calendarData = useMemo(() => ({ ...data, events: [...data.events, ...appleCalendars.events] }), [data, appleCalendars.events]);
+  const [appleEditing, setAppleEditing] = useState<ConnectedEvent | null>(null);
+  useEffect(() => { setAppleEditing(null); }, [renderedScope]);
+  function openEditing(value: Editing) {
+    if (value.kind === 'event' && value.item?.id.startsWith(connectedPrefix)) {
+      const entry = appleCalendars.entries.find(entry => connectedId(entry.calendar.id, entry.event) === value.item?.id);
+      if (entry) setAppleEditing(entry);
+      else setError('这个系统日程已更新，请刷新日历后重新打开。');
+    } else setEditing(value);
+  }
   const [clock, setClock] = useState(new Date());
   const [systemDark,setSystemDark]=useState(()=>matchMedia('(prefers-color-scheme: dark)').matches);
   const dark = data.preferences.themeMode === 'dark'||data.preferences.themeMode==='system'&&systemDark;
@@ -129,6 +141,8 @@ export default function App() {
     setQuery('');
   };
   function commit(next: Workspace) {
+    // System calendar events are a device-local view, never workspace/cloud copies.
+    next = { ...next, events: next.events.filter(event => !event.id.startsWith(connectedPrefix)) };
     try {
       if(renderedScope!==scopeRef.current||renderedGeneration!==scopeGeneration.current)throw new Error('账号已切换，请重新打开操作');
       if(switchingRef.current)throw new Error('账号正在切换，请稍后保存');
@@ -303,14 +317,14 @@ export default function App() {
   const defaultToday=isDefaultTodayLayout(data);
   const openWorkflow=(projectId:string,nodeId?:string)=>{setWorkflowFocus({projectId,nodeId:nodeId??null});setPage('workflow');setQuery('');};
   const quickCapture=<QuickCapture data={data} onSave={commit} onParse={text=>{setCaptureText(text);navigate('services');}}/>;
-  const todayTaskPanel=<Tasks data={data} day={day} query={query} project={null} onEdit={setEditing} onSave={commit} onToggle={id=>commit(setTaskStatus(data,id,data.tasks.find(task=>task.id===id)?.status==='done'?'todo':'done'))}/>;
+  const todayTaskPanel=<Tasks data={data} day={day} query={query} project={null} onEdit={openEditing} onSave={commit} onToggle={id=>commit(setTaskStatus(data,id,data.tasks.find(task=>task.id===id)?.status==='done'?'todo':'done'))}/>;
   function todayModule(key:string){
     if(key==='capture')return quickCapture;
-    if(key==='timeline')return <Calendar data={data} day={day} onDay={setDay} onEdit={setEditing} query={query} clock={clock} full={false} onSave={commit}/>;
+    if(key==='timeline')return <Calendar data={calendarData} day={day} onDay={setDay} onEdit={openEditing} query={query} clock={clock} full={false} onSave={commit}/>;
     if(key==='todo')return todayTaskPanel;
-    if(key==='calendar')return <MiniCalendar day={day} onDay={setDay} events={data.events} weekStartsMonday={data.preferences.weekStartsMonday!==false} timezone={zoneFor(data)}/>;
+    if(key==='calendar')return <MiniCalendar day={day} onDay={setDay} events={calendarData.events} weekStartsMonday={data.preferences.weekStartsMonday!==false} timezone={zoneFor(data)}/>;
     if(key==='overview')return <section className="panel overview"><div className="section-heading"><h2>本日概览</h2><CheckCheck size={18}/></div><div className="progress-ring" style={{'--progress':`${percentage}%`} as CSSProperties}><div><strong>{percentage}<small>%</small></strong><span>今日完成</span></div></div><div className="overview-stats"><div><span>待办</span><strong>{dayTasks.length-completed}</strong></div><div><span>完成</span><strong>{completed}</strong></div></div></section>;
-    if(key==='workflow'||key==='overdue'||key==='pressure'||key==='notices')return <TodayExtraModule module={key} data={data} day={day} onSave={commit} onEdit={setEditing} onNavigate={value=>{if(value==='notices'||value==='workflow'||value==='tasks'||value==='calendar')navigate(value);}} onWorkflow={openWorkflow} clock={clock}/>;
+    if(key==='workflow'||key==='overdue'||key==='pressure'||key==='notices')return <TodayExtraModule module={key} data={data} day={day} onSave={commit} onEdit={openEditing} onNavigate={value=>{if(value==='notices'||value==='workflow'||value==='tasks'||value==='calendar')navigate(value);}} onWorkflow={openWorkflow} clock={clock}/>;
     return null;
   }
   const hour = clock.getHours();
@@ -441,9 +455,9 @@ export default function App() {
             <div className="header-actions">
               {page==='tasks'&&<button className="context-action" onClick={()=>navigate('attachments')}>附件管理</button>}
               {page==='attachments'&&<button className="context-action" onClick={()=>navigate('tasks')}>返回任务</button>}
-              <LiveActivity workspace={data} scope={renderedScope} visible={page==='today'}/>
+              <LiveActivity workspace={calendarData} scope={renderedScope} visible={page==='today'}/>
               {page==='today'&&<button className="context-action" onClick={()=>setTool('today')}><SlidersHorizontalIcon size={18}/><span>定制今天</span></button>}
-              {page==='calendar'&&<AppleCalendarSync data={data} onSave={commit} scope={renderedScope}/>}
+              {page==='calendar'&&<button className="context-action" onClick={()=>openSettings('integrations')}>日历管理</button>}
               {page==='calendar'&&<button className="context-action" onClick={()=>setTool('courses')}><GraduationCapIcon size={19}/><span>课程导入</span></button>}
               <label className="search">
                 <Search size={17} />
@@ -466,7 +480,7 @@ export default function App() {
               </button>
             </div>
           )}
-          {query && <GlobalSearch data={data} query={query} onEdit={setEditing} onProject={id=>{setProject(id);setPage('tasks');setQuery('');}} onNode={id=>{setWorkflowFocus({projectId:workflowNodes(data).find(node=>node.id===id)?.projectId??null,nodeId:id});setPage('workflow');setQuery('');}}/>}
+          {query && <GlobalSearch data={calendarData} query={query} onEdit={openEditing} onProject={id=>{setProject(id);setPage('tasks');setQuery('');}} onNode={id=>{setWorkflowFocus({projectId:workflowNodes(data).find(node=>node.id===id)?.projectId??null,nodeId:id});setPage('workflow');setQuery('');}}/>}
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={`${page}-${project ?? ''}`}
@@ -476,10 +490,10 @@ export default function App() {
               {page==='today'&&defaultToday&&quickCapture}
               {((page === 'today'&&defaultToday) || page === 'calendar') && (
                 <Calendar
-                  data={data}
+                  data={calendarData}
                   day={day}
                   onDay={setDay}
-                  onEdit={setEditing}
+                  onEdit={openEditing}
                   query={query}
                   clock={clock}
                   full={page === 'calendar'}
@@ -493,12 +507,12 @@ export default function App() {
                     day={day}
                     query={query}
                     project={null}
-                    onEdit={setEditing}
+                    onEdit={openEditing}
                     onToggle={(id) => commit(setTaskStatus(data,id,data.tasks.find(task=>task.id===id)?.status==='done'?'todo':'done'))}
                     onSave={commit}
                   />
                   <div className="bottom-grid">
-                    <MiniCalendar day={day} onDay={setDay} events={data.events} weekStartsMonday={data.preferences.weekStartsMonday!==false} timezone={zoneFor(data)} />
+                    <MiniCalendar day={day} onDay={setDay} events={calendarData.events} weekStartsMonday={data.preferences.weekStartsMonday!==false} timezone={zoneFor(data)} />
                     <section className="panel overview">
                       <div className="section-heading">
                         <h2>本日概览</h2>
@@ -551,22 +565,22 @@ export default function App() {
                   day={day}
                   query={query}
                   project={project}
-                  onEdit={setEditing}
+                  onEdit={openEditing}
                   onToggle={(id) => commit(setTaskStatus(data,id,data.tasks.find(task=>task.id===id)?.status==='done'?'todo':'done'))}
                   onSave={commit}
                   full
                 />
               )}
-              {page==='workflow'&&<LazyPanel><Workflow data={data} onSave={commit} onEdit={setEditing} onProject={id=>setWorkflowFocus({projectId:id,nodeId:null})} {...workflowFocus}/></LazyPanel>}
-              {page==='reports'&&<LazyPanel><Reports data={data} day={day} onEdit={setEditing}/></LazyPanel>}
-              {page==='notices'&&<section className="workspace-page"><nav className="service-tabs" aria-label="通知选项">{['通知记录','提醒管理'].map(label=><button key={label} aria-current={noticeTab===label?'page':undefined} onClick={()=>setNoticeTab(label)}>{label}</button>)}</nav>{noticeTab==='提醒管理'?service('提醒'):<Notices data={data} onSave={commit} onEdit={setEditing} receiptKey={workspaceStorage.key(scopeRef.current)+'.reminder-receipts'}/>}</section>}
+              {page==='workflow'&&<LazyPanel><Workflow data={data} onSave={commit} onEdit={openEditing} onProject={id=>setWorkflowFocus({projectId:id,nodeId:null})} {...workflowFocus}/></LazyPanel>}
+              {page==='reports'&&<LazyPanel><Reports data={data} day={day} onEdit={openEditing}/></LazyPanel>}
+              {page==='notices'&&<section className="workspace-page"><nav className="service-tabs" aria-label="通知选项">{['通知记录','提醒管理'].map(label=><button key={label} aria-current={noticeTab===label?'page':undefined} onClick={()=>setNoticeTab(label)}>{label}</button>)}</nav>{noticeTab==='提醒管理'?service('提醒'):<Notices data={data} onSave={commit} onEdit={openEditing} receiptKey={workspaceStorage.key(scopeRef.current)+'.reminder-receipts'}/>}</section>}
               {page==='more'&&<div className="mobile-more">
                 <p className="section-description">规划、回顾和管理，都在这里。</p>
                 <div className="mobile-more-links">{([['projects','项目管理'],['workflow','工作流'],['reports','报告'],['notices','通知与提醒']] as const).map(([key,label])=><button key={key} onClick={()=>navigate(key)}><NavigationIcon page={key}/><span>{label}</span><ChevronRight size={18}/></button>)}</div>
-                <div className="mobile-more-links"><button onClick={()=>session?openSettings('account'):setAuthOpen(true)}><UserCircleIcon size={24}/><span>{session?.user.displayName||'登录账号'}</span><ChevronRight size={18}/></button><button onClick={()=>openSettings('cloud')}><DatabaseIcon size={24}/><span>同步与备份</span><ChevronRight size={18}/></button><button onClick={()=>openSettings('integrations')}><CalendarBlankIcon size={24}/><span>iCloud 日历与集成</span><ChevronRight size={18}/></button><button onClick={()=>openSettings('general')}><GearSixIcon size={24}/><span>设置</span><ChevronRight size={18}/></button></div>
+                <div className="mobile-more-links"><button onClick={()=>session?openSettings('account'):setAuthOpen(true)}><UserCircleIcon size={24}/><span>{session?.user.displayName||'登录账号'}</span><ChevronRight size={18}/></button><button onClick={()=>openSettings('cloud')}><DatabaseIcon size={24}/><span>同步与备份</span><ChevronRight size={18}/></button><button onClick={()=>openSettings('integrations')}><CalendarBlankIcon size={24}/><span>日历与集成</span><ChevronRight size={18}/></button><button onClick={()=>openSettings('general')}><GearSixIcon size={24}/><span>设置</span><ChevronRight size={18}/></button></div>
               </div>}
-              {page==='projects'&&<section className="workspace-page"><Projects data={data} onSave={commit} onEdit={setEditing}/></section>}
-              {page==='settings'&&<SettingsPage data={data} onSave={commit} onImport={restore} rawBackup={()=>workspaceStorage.raw(scopeRef.current)} scope={scopeRef.current} section={settingsSection} onSection={setSettingsSection} cloudSync={sync?<CloudSync sync={sync} workspace={data} onSave={commit} onSignIn={()=>{void switchSession(null).then(()=>setAuthOpen(true));}}/>:signIn} cloudBackups={service('备份')} apple={service('Apple 日历')} feishu={service('飞书')} account={session?account:<button className="settings-action" onClick={()=>setAuthOpen(true)}>登录账号<ChevronRight size={18}/></button>} onToday={()=>setTool('today')} onCourses={()=>setTool('courses')} onDone={()=>navigate('today')}/>}
+              {page==='projects'&&<section className="workspace-page"><Projects data={data} onSave={commit} onEdit={openEditing}/></section>}
+              {page==='settings'&&<SettingsPage data={data} onSave={commit} onImport={restore} rawBackup={()=>workspaceStorage.raw(scopeRef.current)} scope={scopeRef.current} section={settingsSection} onSection={setSettingsSection} cloudSync={sync?<CloudSync sync={sync} workspace={data} onSave={commit} onSignIn={()=>{void switchSession(null).then(()=>setAuthOpen(true));}}/>:signIn} cloudBackups={service('备份')} apple={<ConnectedCalendars connection={appleCalendars} data={data} onSave={commit} scope={renderedScope} legacy={service('Apple 日历')}/>} feishu={service('飞书')} account={session?account:<button className="settings-action" onClick={()=>setAuthOpen(true)}>登录账号<ChevronRight size={18}/></button>} onToday={()=>setTool('today')} onCourses={()=>setTool('courses')} onDone={()=>navigate('today')}/>}
               {page==='services'&&(session && sync ? <section className="workspace-page">{service('AI')}</section> : <section className="ai-signin" aria-label="登录以使用 AI 助手">
                 <div className="ai-signin-heading"><SparkleIcon size={23} weight="duotone" aria-hidden="true"/><h2>把想法变成计划</h2></div>
                 <p>描述你的安排，让 AI 帮你整理任务、规划日程。</p>
@@ -586,11 +600,14 @@ export default function App() {
             data={data}
             day={day}
             defaultProject={project}
+            appleCalendars={appleCalendars.calendars.filter(calendar => appleCalendars.selected.includes(calendar.id))}
+            onCreateAppleEvent={appleCalendars.save}
             onSave={commit}
             onClose={() => setEditing(null)}
           />
         )}
       </AnimatePresence>
+      {appleEditing && <ConnectedEventEditor key={connectedId(appleEditing.calendar.id, appleEditing.event)} entry={appleEditing} connection={appleCalendars} data={data} onClose={()=>setAppleEditing(null)}/>}
       {tool==='courses'&&<LazyPanel><CourseImport data={data} onSave={commit} onClose={()=>setTool(null)}/></LazyPanel>}
       {tool==='today'&&<TodayCustomization data={data} onSave={commit} onClose={()=>setTool(null)}/>}
       </>}
